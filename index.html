@@ -6,12 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{
---bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;
-}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;}
 body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
 .hidden{display:none!important;}
 header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';}
 .avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;}
 .container{max-width:700px;margin:20px auto;padding:0 10px}
 
@@ -32,6 +31,10 @@ header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;dis
 .profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
 .profile img{width:96px;border:3px solid #000}
 .stats{display:flex;justify-content:space-around;margin:10px 0}
+
+/* FRIENDS */
+.friend-list{background:#222;padding:8px;border:2px solid #000;margin:5px 0}
+.friend-request{display:flex;justify-content:space-between;align-items:center;padding:4px;border-bottom:1px solid #555}
 
 /* INPUTS */
 input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
@@ -64,7 +67,7 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 </div>
 
 <header>
-    <div style="font-family:'Press Start 2P';color:#3f3">CRAFTNET</div>
+    <div class="header-title" onclick="openAdminMenu()">CRAFTNET</div>
     <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
         <span id="nav-name"></span>
         <img id="nav-avatar" class="avatar">
@@ -72,14 +75,12 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 </header>
 
 <div id="main" class="container hidden">
-    <!-- Post erstellen -->
     <div class="post" style="padding:15px;background:#444">
         <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
         <input id="post-video" placeholder="YouTube Link (optional)">
         <input id="post-img" placeholder="Bild URL (optional)">
         <button class="btn btn-green" onclick="createPost()">POSTEN</button>
     </div>
-    <!-- Feed -->
     <div id="feed"></div>
 </div>
 
@@ -88,12 +89,13 @@ const ADMIN_USERS=["Mauvi_"];
 let isLoginMode=true,currentUser=null;
 let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
 let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
+let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
 
 const el=id=>document.getElementById(id);
 const isAdmin=u=>ADMIN_USERS.includes(u);
-function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));}
+function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));}
 
-/* LOGIN */
+/* ===== AUTH ===== */
 function toggleAuthMode(){
     isLoginMode=!isLoginMode;
     el("auth-title").innerText=isLoginMode?"LOGIN":"REGISTRIEREN";
@@ -124,7 +126,7 @@ function loginUser(n){
     renderFeed();
 }
 
-/* POSTS */
+/* ===== POSTS ===== */
 function createPost(){
     const text=el("post-text").value.trim();
     if(!text)return;
@@ -139,7 +141,51 @@ function addComment(id){const msg=prompt("Kommentar schreiben:");if(!msg)return;
 function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();renderFeed();}
 function deletePost(id){posts=posts.filter(p=>p.id!==id);save();renderFeed();}
 
-/* RENDER FEED */
+/* ===== FRIEND SYSTEM ===== */
+function sendFriendRequest(toUser){
+    if(!friendRequests[toUser])friendRequests[toUser]=[];
+    if(friendRequests[toUser].includes(currentUser))return alert("Anfrage schon gesendet!");
+    friendRequests[toUser].push(currentUser);
+    save();
+    alert("Freundesanfrage gesendet!");
+}
+function respondFriendRequest(fromUser,accept){
+    friendRequests[currentUser]=friendRequests[currentUser].filter(u=>u!==fromUser);
+    if(accept){
+        users[currentUser].friends.push(fromUser);
+        users[fromUser].friends.push(currentUser);
+    }
+    save();renderAdminMenu();
+}
+
+/* ===== ADMIN MENU ===== */
+function openAdminMenu(){
+    if(!isAdmin(currentUser))return;
+    let html=`<div class="post" style="text-align:left;padding:10px">
+        <h3>Admin Menü</h3>
+        <h4>Accounts</h4>`;
+    Object.keys(users).forEach(u=>{
+        html+=`${u} ${isAdmin(u)?"[ADMIN]":""} ${u!==currentUser?`<button class="btn" onclick="deleteUser('${u}')">Löschen</button>`:""}<br>`;
+    });
+    html+=`<h4>Freundesanfragen</h4>`;
+    const reqs=friendRequests[currentUser]||[];
+    if(reqs.length===0) html+="Keine Anfragen<br>";
+    reqs.forEach(u=>{
+        html+=`<div class="friend-request">${u} <button class="btn" onclick="respondFriendRequest('${u}',true)">✅</button> <button class="btn" onclick="respondFriendRequest('${u}',false)">❌</button></div>`;
+    });
+    html+=`<button class="btn" onclick="renderFeed()">⬅ Zurück</button></div>`;
+    el("feed").innerHTML=html;
+}
+function deleteUser(u){
+    if(!isAdmin(currentUser)||!users[u]||ADMIN_USERS.includes(u))return alert("Nicht erlaubt!");
+    delete users[u];
+    posts=posts.filter(p=>p.author!==u);
+    if(friendRequests[u]) delete friendRequests[u];
+    Object.keys(friendRequests).forEach(k=>friendRequests[k]=friendRequests[k].filter(f=>f!==u));
+    save();renderFeed();
+}
+
+/* ===== RENDER FEED ===== */
 function renderFeed(){
     el("feed").innerHTML="";
     posts.forEach(p=>{
@@ -163,30 +209,9 @@ function renderFeed(){
             </div>
         </div>`;
     });
-
-    if(isAdmin(currentUser)){
-        el("feed").innerHTML+=`<div class="post" style="text-align:center">
-        <h3>Admin: Alle Accounts</h3>
-        ${Object.keys(users).map(u=>`
-        <div>
-            ${u} ${isAdmin(u)?"[ADMIN]":""}
-            ${u!==currentUser?`<button class="btn" onclick="deleteUser('${u}')">Löschen</button>`:""}
-        </div>`).join("")}
-        </div>`;
-    }
 }
 
-/* DELETE USER */
-function deleteUser(u){
-    if(!isAdmin(currentUser)||!users[u]||ADMIN_USERS.includes(u))return alert("Du darfst diesen User nicht löschen!");
-    // User löschen
-    delete users[u];
-    // Posts löschen
-    posts = posts.filter(p=>p.author!==u);
-    save();renderFeed();
-}
-
-/* PROFILE */
+/* ===== PROFILE ===== */
 function showProfile(u){
     const user=users[u];
     const count=posts.filter(p=>p.author===u).length;
@@ -200,6 +225,7 @@ function showProfile(u){
             <div>📄 ${count}<br>Posts</div>
             <div>🤝 ${user.friends.length}<br>Freunde</div>
         </div>
+        ${u!==currentUser?`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`:""}
         <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
     </div>`;
 }
