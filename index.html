@@ -2,11 +2,11 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>CraftNet Ultimate - Media Edition</title>
+<title>CraftNet Ultimate - Owner Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;--blue:#3498db;--red:#e74c3c;--gold:#ffcc00;}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;--blue:#3498db;--red:#e74c3c;--gold:#ffcc00;--yt:#ff0000;--tt:#00f2ea;}
 body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;overflow-x:hidden;}
 .hidden{display:none!important;}
 header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:100;position:sticky;top:0;}
@@ -69,9 +69,10 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 
 <div id="side-menu">
     <div class="menu-item" onclick="location.reload()">🏠 HOME</div>
-    <a href="projekt.html" class="menu-item" style="background:var(--gold); color:black; text-decoration:none;">🎮 PROJEKT-INFO</a>
     <div class="menu-item" onclick="window.openProfileEdit()">⚙️ PROFIL</div>
     <div class="menu-item" onclick="window.openFriendsList()">🤝 FREUNDE</div>
+    <div class="menu-item" style="background:var(--gold); color:black;" onclick="window.openOwnerPage()">👑 OWNER</div>
+    
     <div id="admin-section" class="hidden">
         <hr style="border:1px solid #000">
         <div class="menu-item" style="background:var(--admin)" onclick="window.openAdminPanel()">👑 USER CONTROL</div>
@@ -96,7 +97,7 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
@@ -197,81 +198,53 @@ function startApp() {
     });
 }
 
-/* --- KOMMENTAR-FUNKTION --- */
 window.showComments = async (postId) => {
     const postSnap = await getDoc(doc(db, "posts", postId));
     const p = postSnap.data();
     el("ui-modal").classList.remove("hidden");
-    
-    let commHtml = `<h3>KOMMENTARE</h3><div class="comment-box" id="modal-comm-list">`;
-    if(p.comments && p.comments.length > 0) {
-        p.comments.forEach(c => {
-            commHtml += `<div style="margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">
-                <b style="color:var(--green)">${c.u}:</b> ${c.t}
-            </div>`;
-        });
-    } else {
-        commHtml += `<p style="opacity:0.5; font-size:1rem;">Keine Kommentare vorhanden.</p>`;
-    }
-    commHtml += `</div>`;
-    commHtml += `<input id="new-comm-input" placeholder="Schreibe etwas...">`;
-    commHtml += `<button class="btn btn-green" style="width:100%" onclick="window.submitComment('${postId}')">SENDEN</button>`;
-    
-    el("ui-content").innerHTML = commHtml;
+    let html = `<h3>KOMMENTARE</h3><div class="comment-box">`;
+    if(p.comments?.length) {
+        p.comments.forEach(c => html += `<div style="margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;"><b style="color:var(--green)">${c.u}:</b> ${c.t}</div>`);
+    } else html += `<p style="opacity:0.5;">Keine Kommentare.</p>`;
+    html += `</div><input id="new-comm-input" placeholder="Schreiben..."><button class="btn btn-green" style="width:100%" onclick="window.submitComment('${postId}')">SENDEN</button>`;
+    el("ui-content").innerHTML = html;
 };
 
 window.submitComment = async (id) => {
-    const input = el("new-comm-input");
-    const text = input.value.trim();
+    const text = el("new-comm-input").value.trim();
     if(!text) return;
-    await updateDoc(doc(db, "posts", id), { 
-        comments: arrayUnion({ u: currentUser, t: text }) 
-    });
-    window.showComments(id); // Liste neu laden
+    await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ u: currentUser, t: text }) });
+    window.showComments(id);
 };
 
-/* --- LIKE-FUNKTION --- */
 window.toggleLike = async (postId, alreadyLiked) => {
-    const postRef = doc(db, "posts", postId);
-    await updateDoc(postRef, {
-        likes: increment(alreadyLiked ? -1 : 1),
-        likedBy: alreadyLiked ? arrayRemove(currentUser) : arrayUnion(currentUser)
-    });
+    await updateDoc(doc(db, "posts", postId), { likes: increment(alreadyLiked ? -1 : 1), likedBy: alreadyLiked ? arrayRemove(currentUser) : arrayUnion(currentUser) });
 };
 
 el("btn-post").onclick = async () => {
     const text = el("post-text").value.trim();
     if(!text) return;
-    await addDoc(collection(db, "posts"), { 
-        author: currentUser, text, media: el("post-media").value, 
-        timestamp: Date.now(), comments: [], likes: 0, likedBy: [] 
-    });
+    await addDoc(collection(db, "posts"), { author: currentUser, text, media: el("post-media").value, timestamp: Date.now(), comments: [], likes: 0, likedBy: [] });
     el("post-text").value = ""; el("post-media").value = "";
 };
 
 window.delPost = async id => { if(confirm("Löschen?")) await deleteDoc(doc(db, "posts", id)); };
 
-/* --- CHAT SYSTEM --- */
-window.openChat = (target) => {
-    window.closeUI(); el("side-menu").classList.remove("open");
-    if(currentChatUnsubscribe) currentChatUnsubscribe();
-    const chatId = [currentUser, target].sort().join("_");
-    el("chat-container").innerHTML = `<div class="chat-window"><div class="chat-header"><span>${target}</span><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer">X</span></div><div id="chat-msgs" class="chat-messages"></div><div style="padding:10px; background:#222;"><input id="chat-input" placeholder="Nachricht..."></div></div>`;
-    const q = query(collection(db, "chats", chatId, "messages"), orderBy("t", "asc"), limit(100));
-    currentChatUnsubscribe = onSnapshot(q, snap => {
-        const box = el("chat-msgs"); box.innerHTML = "";
-        snap.forEach(d => {
-            const m = d.data();
-            box.innerHTML += `<div class="msg ${m.u === currentUser ? 'me' : 'them'}">${m.m}</div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-    });
-    el("chat-input").onkeydown = async e => {
-        if(e.key === "Enter" && e.target.value.trim()) {
-            await addDoc(collection(db, "chats", chatId, "messages"), { u: currentUser, m: e.target.value, t: Date.now() });
-            e.target.value = "";
-        }
-    };
+/* --- OWNER PAGE --- */
+window.openOwnerPage = () => {
+    el("side-menu").classList.remove("open");
+    el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `
+        <h2 style="color:var(--gold)">👑 OWNER</h2>
+        <img src="https://minotar.net/avatar/Mauvi_" style="width:80px; image-rendering:pixelated; border:4px solid #000; margin-bottom:10px;">
+        <p style="font-size:1.5rem">Folgt mir auf meinen Kanälen!</p>
+        
+        <a href="https://youtube.com/@mauvi020?si=vSFNaTIx8dcije8d" target="_blank" class="btn" style="background:var(--yt); color:white; display:block; text-decoration:none; margin-bottom:10px;">📺 YOUTUBE</a>
+        
+        <a href="https://www.tiktok.com/@mauvi_cat?_r=1&_t=ZG-936669Va7qy" target="_blank" class="btn" style="background:var(--tt); color:black; display:block; text-decoration:none;">📱 TIKTOK</a>
+        
+        <p style="margin-top:20px; font-size:0.8rem; opacity:0.7;">CraftNet v2.0 - Developed by Mauvi_</p>
+    `;
 };
 
 /* --- UI HELPERS --- */
@@ -279,32 +252,28 @@ window.closeUI = () => el("ui-modal").classList.add("hidden");
 window.openFriendsList = () => {
     const friends = allUsers[currentUser]?.friends || [];
     el("ui-modal").classList.remove("hidden");
-    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Noch keine Freunde.");
+    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Keine Freunde.");
+};
+window.openChat = (target) => {
+    window.closeUI();
+    const chatId = [currentUser, target].sort().join("_");
+    el("chat-container").innerHTML = `<div class="chat-window"><div class="chat-header"><span>${target}</span><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer">X</span></div><div id="chat-msgs" class="chat-messages"></div><div style="padding:10px; background:#222;"><input id="chat-input" placeholder="Nachricht..."></div></div>`;
+    const q = query(collection(db, "chats", chatId, "messages"), orderBy("t", "asc"), limit(50));
+    onSnapshot(q, snap => {
+        el("chat-msgs").innerHTML = "";
+        snap.forEach(d => el("chat-msgs").innerHTML += `<div class="msg ${d.data().u === currentUser ? 'me' : 'them'}">${d.data().m}</div>`);
+        el("chat-msgs").scrollTop = el("chat-msgs").scrollHeight;
+    });
+    el("chat-input").onkeydown = async e => { if(e.key === "Enter" && e.target.value.trim()){ await addDoc(collection(db, "chats", chatId, "messages"), { u: currentUser, m: e.target.value, t: Date.now() }); e.target.value=""; } };
 };
 window.showUserPage = (name) => {
     const u = allUsers[name]; el("ui-modal").classList.remove("hidden");
     el("ui-content").innerHTML = `<img src="${u.skin}" style="width:80px; image-rendering:pixelated; border:2px solid #000"><h2>${name}</h2><p>${u.bio || 'Miner'}</p>${(name !== currentUser && !allUsers[currentUser].friends?.includes(name)) ? `<button class="btn btn-blue" onclick="window.addFriend('${name}')">HINZUFÜGEN</button>` : (name !== currentUser ? `<button class="btn btn-green" onclick="window.openChat('${name}')">CHAT</button>` : "")}`;
 };
-window.addFriend = async name => {
-    await updateDoc(doc(db, "users", name), { friends: arrayUnion(currentUser) });
-    await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(name) });
-    alert("Befreundet!"); window.closeUI();
-};
-window.openProfileEdit = () => {
-    const u = allUsers[currentUser]; el("ui-modal").classList.remove("hidden");
-    el("ui-content").innerHTML = `<h3>⚙️ PROFIL</h3>Skin URL:<input id="edit-skin" value="${u.skin || ''}">Bio:<textarea id="edit-bio">${u.bio || ''}</textarea><button class="btn btn-green" onclick="window.saveProfile()">SPEICHERN</button>`;
-};
-window.saveProfile = async () => {
-    await updateDoc(doc(db, "users", currentUser), { skin: el("edit-skin").value, bio: el("edit-bio").value });
-    location.reload();
-};
-window.openAdminPanel = async () => {
-    el("ui-modal").classList.remove("hidden");
-    const snap = await getDocs(collection(db, "users"));
-    let html = "<h3>👑 ADMIN</h3>";
-    snap.forEach(d => { if(d.id !== currentUser) html += `<div style="background:#444; margin:5px; padding:10px; border:2px solid #000"><b>${d.id}</b> <button class="btn btn-red" onclick="window.adminDelUser('${d.id}')">X</button></div>`; });
-    el("ui-content").innerHTML = html;
-};
+window.addFriend = async name => { await updateDoc(doc(db, "users", name), { friends: arrayUnion(currentUser) }); await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(name) }); alert("Befreundet!"); window.closeUI(); };
+window.openProfileEdit = () => { const u = allUsers[currentUser]; el("ui-modal").classList.remove("hidden"); el("ui-content").innerHTML = `<h3>⚙️ PROFIL</h3>Skin URL:<input id="edit-skin" value="${u.skin || ''}">Bio:<textarea id="edit-bio">${u.bio || ''}</textarea><button class="btn btn-green" onclick="window.saveProfile()">SPEICHERN</button>`; };
+window.saveProfile = async () => { await updateDoc(doc(db, "users", currentUser), { skin: el("edit-skin").value, bio: el("edit-bio").value }); location.reload(); };
+window.openAdminPanel = async () => { el("ui-modal").classList.remove("hidden"); const snap = await getDocs(collection(db, "users")); let html = "<h3>👑 ADMIN</h3>"; snap.forEach(d => { if(d.id !== currentUser) html += `<div style="background:#444; margin:5px; padding:10px; border:2px solid #000"><b>${d.id}</b> <button class="btn btn-red" onclick="window.adminDelUser('${d.id}')">X</button></div>`; }); el("ui-content").innerHTML = html; };
 window.adminDelUser = async n => { if(confirm(`Löschen?`)) await deleteDoc(doc(db, "users", n)); window.openAdminPanel(); };
 </script>
 </body>
