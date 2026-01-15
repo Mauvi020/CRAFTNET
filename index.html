@@ -2,42 +2,59 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>CraftNet – Fix</title>
+<title>CraftNet Ultimate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
 <style>
-body{margin:0;background:#1e1e1e;color:white;font-family:monospace}
-.hidden{display:none}
-button{padding:10px;margin-top:10px;font-size:16px;cursor:pointer}
-input{padding:8px;width:100%;margin-top:5px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center}
-.card{background:#333;padding:20px;border:2px solid #000;width:300px}
-header{background:#444;padding:10px}
-.container{padding:15px}
-.post{background:#333;padding:10px;margin-bottom:10px}
-.error{background:#ffaaaa;color:#900;padding:6px;margin-bottom:6px}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
+.hidden{display:none!important;}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';}
+.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;}
+.container{max-width:700px;margin:20px auto;padding:0 10px}
+
+.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
+.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
+.post-body{padding:15px;font-size:1.5rem}
+.post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
+.username{cursor:pointer;color:var(--green)}
+
+input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
+.btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
+.btn-green{background:var(--green);color:white}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
+.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
+.error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="loginModal" class="modal">
+<div id="auth-modal" class="modal">
   <div class="card">
-    <h3>Login / Register</h3>
-    <div id="error" class="error hidden"></div>
-    <input id="username" placeholder="Name">
-    <input id="password" type="password" placeholder="Passwort (min.4)">
-    <button id="loginBtn">Beitreten</button>
+    <h2 style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
+    <div id="auth-error" class="error hidden"></div>
+    <input id="auth-user" placeholder="Name">
+    <input id="auth-pass" type="password" placeholder="Passwort (min.4)">
+    <button id="loginBtn" class="btn btn-green">WELT BETRETEN</button>
   </div>
 </div>
 
 <header>
-  <b>CRAFTNET</b>
+  <div class="header-title">CRAFTNET</div>
+  <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+    <span id="nav-name"></span>
+    <img id="nav-avatar" class="avatar">
+  </div>
 </header>
 
-<div id="app" class="container hidden">
-  <div class="post">
-    <textarea id="postText" placeholder="Was gibt's Neues?" style="width:100%"></textarea>
-    <button id="postBtn">Posten</button>
+<div id="main" class="container hidden">
+  <div class="post" style="padding:15px;background:#444">
+    <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+    <button id="postBtn" class="btn btn-green">POSTEN</button>
   </div>
   <div id="feed"></div>
 </div>
@@ -45,75 +62,79 @@ header{background:#444;padding:10px}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  // STATE
-  let users = JSON.parse(localStorage.getItem("users") || "{}");
-  let posts = JSON.parse(localStorage.getItem("posts") || "[]");
+  let users = JSON.parse(localStorage.getItem("cn_users") || "{}");
+  let posts = JSON.parse(localStorage.getItem("cn_posts") || "[]");
   let currentUser = null;
 
-  // ELEMENTE
-  const loginModal = document.getElementById("loginModal");
-  const loginBtn   = document.getElementById("loginBtn");
-  const errorBox   = document.getElementById("error");
-  const app        = document.getElementById("app");
-  const feed       = document.getElementById("feed");
-
+  const el = id => document.getElementById(id);
   const save = () => {
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("posts", JSON.stringify(posts));
+    localStorage.setItem("cn_users", JSON.stringify(users));
+    localStorage.setItem("cn_posts", JSON.stringify(posts));
   };
 
-  const showError = msg => {
-    errorBox.textContent = msg;
-    errorBox.classList.remove("hidden");
-  };
+  function showError(msg){
+    el("auth-error").innerText = msg;
+    el("auth-error").classList.remove("hidden");
+  }
 
-  // LOGIN (FIXED)
-  loginBtn.addEventListener("click", () => {
-    const name = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
+  /* LOGIN – FIX */
+  el("loginBtn").addEventListener("click", () => {
+    const name = el("auth-user").value.trim();
+    const pass = el("auth-pass").value;
 
-    errorBox.classList.add("hidden");
+    el("auth-error").classList.add("hidden");
 
-    if (!name || pass.length < 4) {
-      showError("Name & Passwort nötig");
+    if(!name || pass.length < 4){
+      showError("Name & Passwort nötig!");
       return;
     }
 
     // Auto-Registrierung
-    if (!users[name]) {
-      users[name] = { pass };
+    if(!users[name]){
+      users[name] = {
+        pass,
+        skin: `https://minotar.net/avatar/${name}`
+      };
       save();
     }
 
-    if (users[name].pass !== pass) {
-      showError("Falsches Passwort");
+    if(users[name].pass !== pass){
+      showError("Falsches Passwort!");
       return;
     }
 
     // LOGIN OK
     currentUser = name;
-    loginModal.classList.add("hidden");
-    app.classList.remove("hidden");
+    el("auth-modal").classList.add("hidden");
+    el("main").classList.remove("hidden");
+    el("nav-info").classList.remove("hidden");
+    el("nav-name").innerText = name;
+    el("nav-avatar").src = users[name].skin;
+
     renderFeed();
   });
 
-  // POSTEN
-  document.getElementById("postBtn").addEventListener("click", () => {
-    const text = document.getElementById("postText").value.trim();
-    if (!text) return;
-    posts.unshift({ user: currentUser, text });
-    document.getElementById("postText").value = "";
+  /* POSTS */
+  el("postBtn").addEventListener("click", () => {
+    const text = el("post-text").value.trim();
+    if(!text) return;
+    posts.unshift({author: currentUser, text});
+    el("post-text").value = "";
     save();
     renderFeed();
   });
 
   function renderFeed(){
-    feed.innerHTML = "";
-    posts.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "post";
-      div.innerHTML = `<b>${p.user}</b><br>${p.text}`;
-      feed.appendChild(div);
+    el("feed").innerHTML = "";
+    posts.forEach(p=>{
+      el("feed").innerHTML += `
+        <div class="post">
+          <div class="post-header">
+            <img class="avatar" src="${users[p.author].skin}">
+            <b class="username">${p.author}</b>
+          </div>
+          <div class="post-body">${p.text}</div>
+        </div>`;
     });
   }
 
