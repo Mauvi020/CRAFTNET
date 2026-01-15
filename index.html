@@ -48,12 +48,8 @@ textarea,input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0;backgro
 </head>
 <body>
 
-<!-- HAMBURGER -->
-<div id="hamburger" onclick="toggleSidebar()">
-  <div></div><div></div><div></div>
-</div>
+<div id="hamburger" onclick="toggleSidebar()"><div></div><div></div><div></div></div>
 
-<!-- SIDEBAR -->
 <div id="sidebar" class="collapsed">
 <h3>CRAFTNET</h3>
 <div class="menu-item" onclick="menuSelect('home')">Home</div>
@@ -63,10 +59,8 @@ textarea,input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0;backgro
 <div id="admin-menu" class="menu-item admin hidden" onclick="menuSelect('admin')">Admin: Nutzer löschen</div>
 </div>
 
-<!-- MAIN AREA -->
 <div id="main-area"></div>
 
-<!-- LOGIN -->
 <div id="auth-modal" class="modal">
     <div class="card">
         <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
@@ -83,7 +77,7 @@ textarea,input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0;backgro
 const ADMIN_USERS=["Mauvi_"];
 let isLoginMode=true,currentUser=null;
 let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
-let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
+let posts=JSON.parse(localStorage.getItem("cn_posts")||"[]");
 let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
 let messages=JSON.parse(localStorage.getItem("cn_messages")||"{}");
 
@@ -91,41 +85,42 @@ const el=id=>document.getElementById(id);
 const isAdmin=u=>ADMIN_USERS.includes(u);
 function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));localStorage.setItem("cn_messages",JSON.stringify(messages));}
 
-/* ===== AUTH ===== */
+/* AUTH */
 function toggleAuthMode(){
     isLoginMode=!isLoginMode;
     el("auth-title").innerText=isLoginMode?"LOGIN":"REGISTRIEREN";
     el("auth-skin").classList.toggle("hidden",isLoginMode);
     el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
+    el("auth-error").classList.add("hidden");
 }
+
 function showError(msg){el("auth-error").innerText=msg;el("auth-error").classList.remove("hidden");}
+
 function handleAuth(){
-    const n=el("auth-user").value.trim(), p=el("auth-pass").value, s=el("auth-skin").value.trim();
-    if(!n||p.length<4)return showError("Name & Passwort nötig!");
+    const n=el("auth-user").value.trim(),p=el("auth-pass").value,s=el("auth-skin").value.trim();
+    if(!n || p.length<4){return showError("Name & Passwort nötig!");}
     if(isLoginMode){
-        if(users[n] && users[n].pass===p) loginUser(n);
+        if(users[n] && users[n].pass===p){ loginUser(n); }
         else showError("Falsche Daten!");
     } else {
         if(users[n]) return showError("Name vergeben!");
         users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"Hey 👋",friends:[]};
-        save(); alert("Registriert! Jetzt einloggen."); toggleAuthMode();
+        save();
+        alert("Registriert! Jetzt einloggen.");
+        toggleAuthMode();
     }
 }
+
 function loginUser(n){
     currentUser=n;
     el("auth-modal").classList.add("hidden");
-    el("hamburger").style.display="block"; // Menü sichtbar
+    el("hamburger").style.display="block";
     if(isAdmin(n)) el("admin-menu").classList.remove("hidden");
     showHome();
 }
 
-/* ===== SIDEBAR CONTROL ===== */
-function toggleSidebar(){
-    el("sidebar").classList.toggle("collapsed");
-    el("main-area").classList.toggle("shifted");
-}
-
-/* ===== MENU NAVIGATION ===== */
+/* SIDEBAR */
+function toggleSidebar(){el("sidebar").classList.toggle("collapsed");el("main-area").classList.toggle("shifted");}
 function menuSelect(panel){
     if(panel==='home') showHome();
     else if(panel==='requests') showFriendRequests();
@@ -135,23 +130,7 @@ function menuSelect(panel){
     toggleSidebar();
 }
 
-/* ===== POSTS ===== */
-function createPost(){
-    const text=prompt("Post Text:"), img=prompt("Bild URL (optional):")||"", video=prompt("YouTube URL (optional):");
-    if(!text) return;
-    const vid=video.match(/(?:v=|\.be\/)([^&]+)/);
-    posts.unshift({id:Date.now(),author:currentUser,text,video:vid?vid[1]:null,img,likes:[],comments:[]});
-    save(); showHome();
-}
-function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();showHome();}
-function addComment(id){const c=prompt("Kommentar:");if(!c)return;posts.find(p=>p.id===id).comments.push({u:currentUser,t:c});save();showHome();}
-function deletePost(id){posts=posts.filter(p=>p.id!==id);save();showHome();}
-
-/* ===== FRIEND SYSTEM ===== */
-function sendFriendRequest(u){if(!friendRequests[u]) friendRequests[u]=[]; if(friendRequests[u].includes(currentUser)) return alert("Anfrage schon gesendet!"); friendRequests[u].push(currentUser); save();alert("Freundesanfrage gesendet!");}
-function respondFriendRequest(u,accept){friendRequests[currentUser]=friendRequests[currentUser].filter(f=>f!==u); if(accept){users[currentUser].friends.push(u); users[u].friends.push(currentUser);} save(); showFriendRequests();}
-
-/* ===== VIEWS ===== */
+/* POSTS */
 function showHome(){
     el("main-area").innerHTML="";
     posts.forEach(p=>{
@@ -160,62 +139,13 @@ function showHome(){
         <div class="post-body">${p.text}</div>
         ${p.video?`<iframe style="width:100%;height:200px;" src="https://www.youtube.com/embed/${p.video}" frameborder="0" allowfullscreen></iframe>`:""}
         ${p.img?`<img src="${p.img}" style="width:100%;max-height:200px;object-fit:contain">`:""}
-        <div class="post-footer"><span onclick="likePost(${p.id})" style="cursor:pointer">⛏️${p.likes.length}</span> <span onclick="addComment(${p.id})" style="cursor:pointer">💬${p.comments.length}</span></div>
+        <div class="post-footer"><span onclick="likePost(${p.id})" style="cursor:pointer">⛏️${p.likes?.length||0}</span> <span onclick="addComment(${p.id})" style="cursor:pointer">💬${p.comments?.length||0}</span></div>
         </div>`;
     });
 }
 
-function showProfilePanel(){
-    const u=users[currentUser];
-    el("main-area").innerHTML=`<div class="profile"><img src="${u.skin}"><h2>${currentUser}</h2>
-    <textarea onchange="users['${currentUser}'].bio=this.value;save()">${u.bio}</textarea>
-    <input value="${u.status}" onchange="users['${currentUser}'].status=this.value;save()">
-    </div>`;
-}
-
-function showFriendRequests(){
-    el("main-area").innerHTML="<h3>Freundesanfragen</h3>";
-    const reqs=friendRequests[currentUser]||[];
-    if(reqs.length===0) el("main-area").innerHTML+="Keine Anfragen.";
-    reqs.forEach(u=>{
-        const div=document.createElement("div"); div.className="friend-request";
-        div.innerHTML=`${u} <button onclick="respondFriendRequest('${u}',true)">✅</button> <button onclick="respondFriendRequest('${u}',false)">❌</button>`;
-        el("main-area").appendChild(div);
-    });
-}
-
-function showFriendChat(){
-    el("main-area").innerHTML="<h3>Freunde Chat</h3>";
-    const f=users[currentUser].friends||[];
-    if(f.length===0){el("main-area").innerHTML+="Keine Freunde.";} 
-    f.forEach(fr=>{
-        const div=document.createElement("div"); div.className="friend-chat";
-        div.innerHTML=`<b>${fr}</b><br>${(messages[fr+'_'+currentUser]||[]).map(m=>`<div class="friend-msg"><b>${m.from}:</b> ${m.text}</div>`).join("")}`;
-        const btn=document.createElement("button"); btn.textContent="Nachricht senden";
-        btn.onclick=()=>{const t=prompt("Text:"); if(!t)return; if(!messages[currentUser+'_'+fr]) messages[currentUser+'_'+fr]=[]; messages[currentUser+'_'+fr].push({from:currentUser,text:t}); save(); showFriendChat();};
-        div.appendChild(btn);
-        el("main-area").appendChild(div);
-    });
-}
-
-function showAdminPanel(){
-    el("main-area").innerHTML="<h3>Admin: Nutzer löschen</h3>";
-    Object.keys(users).forEach(u=>{
-        if(u===currentUser)return;
-        const div=document.createElement("div");
-        div.className="friend-request";
-        div.innerHTML=`${u} <button onclick="deleteUser('${u}')">🗑</button>`;
-        el("main-area").appendChild(div);
-    });
-}
-function deleteUser(u){
-    if(!isAdmin(currentUser)||ADMIN_USERS.includes(u)) return alert("Nicht erlaubt!");
-    delete users[u];
-    posts=posts.filter(p=>p.author!==u);
-    if(friendRequests[u]) delete friendRequests[u];
-    Object.keys(friendRequests).forEach(k=>friendRequests[k]=friendRequests[k].filter(f=>f!==u));
-    save(); showAdminPanel();
-}
+function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();showHome();}
+function addComment(id){const c=prompt("Kommentar:");if(!c)return;posts.find(p=>p.id===id).comments.push({u:currentUser,t:c});save();showHome();}
 </script>
 </body>
 </html>
