@@ -3,161 +3,355 @@
 <head>
 <meta charset="UTF-8">
 <title>CraftNet Ultimate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
 <style>
 :root{
---bg:#1e1e1e;--panel:#333;--green:#5da03b;--admin:#b04bff;
+    --bg:#1e1e1e;
+    --panel:#333;
+    --green:#5da03b;
+    --dirt:#866043;
+    --admin:#b04bff;
 }
-body{margin:0;font-family:VT323;background:var(--bg);color:white}
-.hidden{display:none}
-header{background:#866043;border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between}
-.avatar{width:48px;height:48px;border:2px solid #000}
+body{
+    margin:0;
+    background:var(--bg);
+    color:white;
+    font-family:'VT323', monospace;
+}
+.hidden{display:none!important}
+header{
+    background:var(--dirt);
+    border-bottom:4px solid #000;
+    padding:10px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.avatar{
+    width:48px;height:48px;
+    border:2px solid #000;
+    image-rendering:pixelated;
+}
 .container{max-width:700px;margin:20px auto;padding:0 10px}
 
+/* POSTS */
 .post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
 .post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
 .post-body{padding:15px;font-size:1.5rem}
 .post-footer{background:#222;padding:10px;display:flex;gap:15px}
-.admin{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.7rem}
+.username{cursor:pointer;color:var(--green)}
+.admin-badge{
+    background:var(--admin);
+    padding:2px 6px;
+    border:2px solid #000;
+    font-size:.7rem;
+}
 
-.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
+/* PROFILE */
+.profile{
+    background:#444;
+    border:3px solid #000;
+    padding:20px;
+    text-align:center;
+}
 .profile img{width:96px;border:3px solid #000}
 .stats{display:flex;justify-content:space-around;margin:10px 0}
 
-.btn{padding:8px;border:2px solid #000;background:#aaa;cursor:pointer;font-family:'Press Start 2P';font-size:.6rem}
-.btn-green{background:var(--green);color:white}
-.chat{background:#111;border:3px solid #000;padding:10px;height:250px;overflow-y:auto}
+/* CHAT */
+.chat{
+    background:#111;
+    border:3px solid #000;
+    padding:10px;
+    height:220px;
+    overflow-y:auto;
+}
 .msg{margin:4px 0}
-input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:VT323}
 
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center}
-.card{background:#888;border:4px solid #000;padding:20px;width:340px;text-align:center}
+/* INPUTS */
+input,textarea{
+    width:100%;
+    box-sizing:border-box;
+    padding:8px;
+    margin:6px 0;
+    background:#000;
+    color:#3f3;
+    border:2px solid #555;
+    font-family:'VT323';
+}
+.btn{
+    width:100%;
+    padding:10px;
+    margin-top:8px;
+    border:2px solid #000;
+    cursor:pointer;
+    background:#aaa;
+    font-family:'Press Start 2P';
+    font-size:.6rem;
+}
+.btn-green{background:var(--green);color:white}
+
+/* LOGIN MODAL */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.95);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+}
+.card{
+    background:#8b8b8b;
+    border:4px solid #000;
+    padding:20px;
+    width:360px;
+    text-align:center;
+}
+.error{
+    background:#ffaaaa;
+    color:#900;
+    border:2px solid #000;
+    padding:5px;
+    margin-bottom:5px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="auth" class="modal">
-<div class="card">
-<h3>LOGIN</h3>
-<input id="user" placeholder="Name">
-<input id="pass" type="password" placeholder="Passwort">
-<button class="btn btn-green" onclick="login()">LOGIN</button>
-</div>
+<!-- LOGIN / REGISTER -->
+<div id="auth-modal" class="modal">
+    <div class="card">
+        <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
+        <div id="auth-error" class="error hidden"></div>
+        <input id="auth-user" placeholder="Name">
+        <input id="auth-pass" type="password" placeholder="Passwort (min. 4)">
+        <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
+        <button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
+        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()">
+            Noch kein Account? Registrieren
+        </p>
+    </div>
 </div>
 
 <header>
-<div>CRAFTNET</div>
-<div id="nav"></div>
+    <div style="font-family:'Press Start 2P';color:#3f3">CRAFTNET</div>
+    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+        <span id="nav-name"></span>
+        <img id="nav-avatar" class="avatar">
+    </div>
 </header>
 
-<div class="container hidden" id="main">
-<textarea id="postText" placeholder="Post..."></textarea>
-<button class="btn btn-green" onclick="createPost()">POST</button>
-<div id="feed"></div>
+<div id="main" class="container hidden">
+    <div class="post" style="padding:15px;background:#444">
+        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+        <button class="btn btn-green" onclick="createPost()">POSTEN</button>
+    </div>
+    <div id="feed"></div>
 </div>
 
 <script>
-const ADMIN="Mauvi_";
-let users=JSON.parse(localStorage.users||"{}");
-let posts=JSON.parse(localStorage.posts||"[]");
-let chats=JSON.parse(localStorage.chats||"{}");
-let me=null;
+/* ================= CONFIG ================= */
+const ADMIN_USERS = ["Mauvi_"];
+
+/* ================= STATE ================= */
+let isLoginMode = true;
+let currentUser = null;
+
+let users = JSON.parse(localStorage.getItem("cn_users")) || {};
+let posts = JSON.parse(localStorage.getItem("cn_posts")) || [];
+let chats = JSON.parse(localStorage.getItem("cn_chats")) || {};
+
+/* ================= HELPERS ================= */
+const el = id => document.getElementById(id);
+const isAdmin = u => ADMIN_USERS.includes(u);
 
 function save(){
-localStorage.users=JSON.stringify(users);
-localStorage.posts=JSON.stringify(posts);
-localStorage.chats=JSON.stringify(chats);
+    localStorage.setItem("cn_users", JSON.stringify(users));
+    localStorage.setItem("cn_posts", JSON.stringify(posts));
+    localStorage.setItem("cn_chats", JSON.stringify(chats));
 }
 
-function login(){
-let u=user.value;
-let p=pass.value;
-if(!users[u])users[u]={pass:p,skin:`https://minotar.net/avatar/${u}`,bio:"",status:"",friends:[]};
-if(users[u].pass!==p)return alert("Falsch");
-me=u;
-auth.classList.add("hidden");
-main.classList.remove("hidden");
-nav.innerHTML=u+(u===ADMIN?" <span class='admin'>ADMIN</span>":"");
-renderFeed();
+/* ================= AUTH ================= */
+function toggleAuthMode(){
+    isLoginMode = !isLoginMode;
+    el("auth-title").innerText = isLoginMode ? "LOGIN" : "REGISTRIEREN";
+    el("auth-skin").classList.toggle("hidden", isLoginMode);
+    el("toggle-auth").innerText = isLoginMode
+        ? "Noch kein Account? Registrieren"
+        : "Bereits ein Account? Login";
 }
 
+function showError(msg){
+    el("auth-error").innerText = msg;
+    el("auth-error").classList.remove("hidden");
+}
+
+function handleAuth(){
+    const name = el("auth-user").value.trim();
+    const pass = el("auth-pass").value;
+    const skinVal = el("auth-skin").value.trim();
+
+    if(!name || pass.length < 4){
+        return showError("Name & Passwort nötig!");
+    }
+
+    if(isLoginMode){
+        if(users[name] && users[name].pass === pass){
+            loginUser(name);
+        }else{
+            showError("Falsche Login-Daten!");
+        }
+    }else{
+        if(users[name]) return showError("Name bereits vergeben!");
+        const avatar = skinVal.includes("http")
+            ? skinVal
+            : `https://minotar.net/avatar/${skinVal || name}.png`;
+
+        users[name] = {
+            pass,
+            skin: avatar,
+            bio: "",
+            status: "Hey 👋",
+            friends: []
+        };
+        save();
+        alert("Registriert! Jetzt einloggen.");
+        toggleAuthMode();
+    }
+}
+
+function loginUser(name){
+    currentUser = name;
+    el("auth-modal").classList.add("hidden");
+    el("main").classList.remove("hidden");
+    el("nav-info").classList.remove("hidden");
+    el("nav-name").innerText = name + (isAdmin(name) ? " [ADMIN]" : "");
+    el("nav-avatar").src = users[name].skin;
+    renderFeed();
+}
+
+/* ================= POSTS ================= */
 function createPost(){
-posts.unshift({id:Date.now(),author:me,text:postText.value,likes:[]});
-postText.value="";
-save();renderFeed();
+    const text = el("post-text").value.trim();
+    if(!text) return;
+
+    posts.unshift({
+        id: Date.now(),
+        author: currentUser,
+        text,
+        likes: []
+    });
+    el("post-text").value = "";
+    save();
+    renderFeed();
 }
 
+function deletePost(id){
+    posts = posts.filter(p => p.id !== id);
+    save();
+    renderFeed();
+}
+
+/* ================= RENDER FEED ================= */
 function renderFeed(){
-feed.innerHTML="";
-posts.forEach(p=>{
-feed.innerHTML+=`
-<div class="post">
-<div class="post-header">
-<img class="avatar" src="${users[p.author].skin}">
-<b onclick="profile('${p.author}')">${p.author}</b>
-${p.author===ADMIN?'<span class="admin">ADMIN</span>':''}
-</div>
-<div class="post-body">${p.text}</div>
-<div class="post-footer">
-<span>⛏ ${p.likes.length}</span>
-${me===ADMIN?`<span onclick="delPost(${p.id})">🗑</span>`:""}
-</div>
-</div>`;
-});
+    el("feed").innerHTML = "";
+    posts.forEach(p => {
+        el("feed").innerHTML += `
+        <div class="post">
+            <div class="post-header">
+                <img class="avatar" src="${users[p.author].skin}">
+                <b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
+                ${isAdmin(p.author) ? `<span class="admin-badge">ADMIN</span>` : ""}
+            </div>
+            <div class="post-body">${p.text}</div>
+            <div class="post-footer">
+                <span>⛏️ ${p.likes.length}</span>
+                ${isAdmin(currentUser) ? `<span onclick="deletePost(${p.id})" style="cursor:pointer">🗑</span>` : ""}
+            </div>
+        </div>`;
+    });
 }
 
-function delPost(id){
-posts=posts.filter(p=>p.id!==id);
-save();renderFeed();
+/* ================= PROFILE ================= */
+function showProfile(u){
+    const user = users[u];
+    const userPosts = posts.filter(p => p.author === u);
+    const isFriend = user.friends.includes(currentUser);
+
+    el("feed").innerHTML = `
+    <div class="profile">
+        <img src="${user.skin}">
+        <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
+
+        <textarea ${u!==currentUser?"disabled":""}
+            onchange="users['${u}'].bio=this.value;save()"
+            placeholder="Bio...">${user.bio}</textarea>
+
+        <input ${u!==currentUser?"disabled":""}
+            value="${user.status}"
+            onchange="users['${u}'].status=this.value;save()">
+
+        <div class="stats">
+            <div>📄 ${userPosts.length}<br>Posts</div>
+            <div>🤝 ${user.friends.length}<br>Freunde</div>
+        </div>
+
+        ${u!==currentUser ? `
+            <button class="btn" onclick="toggleFriend('${u}')">
+                ${isFriend ? "Freund entfernen" : "Freund hinzufügen"}
+            </button>
+            ${isFriend ? `<button class="btn" onclick="openChat('${u}')">CHAT</button>` : ""}
+        ` : ""}
+
+        <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
+    </div>
+    `;
 }
 
-function profile(u){
-let fr=users[u].friends.includes(me);
-feed.innerHTML=`
-<div class="profile">
-<img src="${users[u].skin}">
-<h2>${u}</h2>
-<p>${users[u].status}</p>
-<textarea ${u!==me?"disabled":""} onchange="users[me].bio=this.value;save()">${users[u].bio}</textarea>
-${u!==me?`<button class="btn" onclick="friend('${u}')">${fr?"Freund entfernen":"Freund hinzufügen"}</button>`:""}
-${fr?`<button class="btn" onclick="chat('${u}')">CHAT</button>`:""}
-<button class="btn" onclick="renderFeed()">⬅</button>
-</div>`;
+/* ================= FRIENDS ================= */
+function toggleFriend(u){
+    const a = users[currentUser].friends;
+    const b = users[u].friends;
+
+    if(a.includes(u)){
+        users[currentUser].friends = a.filter(x=>x!==u);
+        users[u].friends = b.filter(x=>x!==currentUser);
+    }else{
+        a.push(u);
+        b.push(currentUser);
+    }
+    save();
+    showProfile(u);
 }
 
-function friend(u){
-if(users[u].friends.includes(me)){
-users[u].friends=users[u].friends.filter(x=>x!==me);
-users[me].friends=users[me].friends.filter(x=>x!==u);
-}else{
-users[u].friends.push(me);
-users[me].friends.push(u);
-}
-save();profile(u);
+/* ================= CHAT ================= */
+function openChat(u){
+    const chatId = [currentUser,u].sort().join("-");
+    chats[chatId] = chats[chatId] || [];
+
+    el("feed").innerHTML = `
+    <div class="profile">
+        <h3>Chat mit ${u}</h3>
+        <div class="chat">
+            ${chats[chatId].map(m=>`<div class="msg"><b>${m.u}:</b> ${m.t}</div>`).join("")}
+        </div>
+        <input id="chat-msg" placeholder="Nachricht...">
+        <button class="btn" onclick="sendMsg('${chatId}','${u}')">SENDEN</button>
+        <button class="btn" onclick="showProfile('${u}')">⬅ Zurück</button>
+    </div>
+    `;
 }
 
-function chat(u){
-let id=[me,u].sort().join("-");
-chats[id]=chats[id]||[];
-feed.innerHTML=`
-<div class="profile">
-<h3>Chat mit ${u}</h3>
-<div class="chat" id="chatbox">
-${chats[id].map(m=>`<div class="msg"><b>${m.u}:</b> ${m.t}</div>`).join("")}
-</div>
-<input id="msg">
-<button class="btn" onclick="send('${id}','${u}')">SEND</button>
-<button class="btn" onclick="profile('${u}')">⬅</button>
-</div>`;
-}
-
-function send(id,u){
-chats[id].push({u:me,t:msg.value});
-msg.value="";
-save();chat(u);
+function sendMsg(id,u){
+    const msg = el("chat-msg").value.trim();
+    if(!msg) return;
+    chats[id].push({u:currentUser,t:msg});
+    save();
+    openChat(u);
 }
 </script>
 
