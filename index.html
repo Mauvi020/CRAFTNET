@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>CraftNet Ultimate - Online</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
+.hidden{display:none!important;}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:10;position:relative;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';}
+.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;object-fit:cover;}
+.container{max-width:700px;margin:20px auto;padding:0 10px}
+.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
+.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
+.post-body{padding:15px;font-size:1.5rem}
+.post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
+.username{cursor:pointer;color:var(--green)}
+.admin-badge{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.6rem}
+.comment-box{background:#222;border-top:1px solid #444;padding:8px}
+.comment{font-size:1.1rem;margin:4px 0}
+.comment b{color:var(--green)}
+.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
+.profile img{width:96px;border:3px solid #000}
+.stats{display:flex;justify-content:space-around;margin:10px 0}
+input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
+.btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
+.btn-green{background:var(--green);color:white}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
+.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
+.error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
+.video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
+.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
+.post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
+#admin-sidebar{position:fixed;top:0;right:0;width:300px;height:100%;background:#222;border-left:4px solid #000;padding:20px;z-index:999;overflow-y:auto;display:none;}
+#admin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:998;display:none;}
+.user-item{display:flex;justify-content:space-between;align-items:center;padding:5px;border-bottom:1px solid #555;}
+</style>
+</head>
+<body>
+
+<div id="auth-modal" class="modal">
+    <div class="card">
+        <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
+        <div id="auth-error" class="error hidden"></div>
+        <input id="auth-user" placeholder="Name">
+        <input id="auth-pass" type="password" placeholder="Passwort">
+        <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
+        <button class="btn btn-green" id="auth-btn">WELT BETRETEN</button>
+        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem">Noch kein Account? Registrieren</p>
+    </div>
+</div>
+
+<header>
+    <div class="header-title" id="admin-trigger">CRAFTNET</div>
+    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+        <span id="nav-name"></span>
+        <img id="nav-avatar" class="avatar">
+    </div>
+</header>
+
+<div id="main" class="container hidden">
+    <div class="post" style="padding:15px;background:#444">
+        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+        <input id="post-video" placeholder="YouTube Link (optional)">
+        <input id="post-img" placeholder="Bild URL (optional)">
+        <button class="btn btn-green" id="btn-post">POSTEN</button>
+    </div>
+    <div id="feed">Lade Welt...</div>
+</div>
+
+<div id="admin-overlay"></div>
+<div id="admin-sidebar">
+    <h2>Admin Menü</h2>
+    <div id="admin-users"></div>
+    <button class="btn" id="admin-close">Schließen</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, updateDoc, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
+  authDomain: "craftnet-1c6d1.firebaseapp.com",
+  projectId: "craftnet-1c6d1",
+  storageBucket: "craftnet-1c6d1.firebasestorage.app",
+  messagingSenderId: "679779814784",
+  appId: "1:679779814784:web:d42642d13217015f9f8565"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const ADMIN_USERS = ["Mauvi_"];
+let isLoginMode = true;
+let currentUser = null;
+let userData = null;
+let allUsers = {};
+
+const el = id => document.getElementById(id);
+const isAdmin = u => ADMIN_USERS.includes(u);
+
+/* AUTH LOGIC */
+window.toggleAuthMode = () => {
+    isLoginMode = !isLoginMode;
+    el("auth-title").innerText = isLoginMode ? "LOGIN" : "REGISTRIEREN";
+    el("auth-skin").classList.toggle("hidden", isLoginMode);
+    el("toggle-auth").innerText = isLoginMode ? "Noch kein Account? Registrieren" : "Bereits ein Account? Login";
+};
+el("toggle-auth").onclick = window.toggleAuthMode;
+
+window.handleAuth = async () => {
+    const n = el("auth-user").value.trim();
+    const p = el("auth-pass").value;
+    const s = el("auth-skin").value.trim();
+    
+    if(!n || p.length < 4) return showError("Name & Passwort (min 4) nötig!");
+
+    const userRef = doc(db, "users", n);
+    const userSnap = await getDoc(userRef);
+
+    if(isLoginMode) {
+        if(userSnap.exists() && userSnap.data().pass === p) {
+            loginUser(n, userSnap.data());
+        } else {
+            showError("Falsche Daten!");
+        }
+    } else {
+        if(userSnap.exists()) return showError("Name vergeben!");
+        const newUser = {
+            pass: p,
+            skin: s.includes("http") ? s : `https://minotar.net/avatar/${s || n}`,
+            bio: "Ich bin neu hier!",
+            status: "Online",
+            friends: []
+        };
+        await setDoc(userRef, newUser);
+        alert("Account erstellt! Logge dich jetzt ein.");
+        toggleAuthMode();
+    }
+};
+el("auth-btn").onclick = window.handleAuth;
+
+function showError(msg) {
+    el("auth-error").innerText = msg;
+    el("auth-error").classList.remove("hidden");
+}
+
+function loginUser(name, data) {
+    currentUser = name;
+    userData = data;
+    el("auth-modal").classList.add("hidden");
+    el("main").classList.remove("hidden");
+    el("nav-info").classList.remove("hidden");
+    el("nav-name").innerText = name + (isAdmin(name) ? " [ADMIN]" : "");
+    el("nav-avatar").src = data.skin;
+    startApp();
+}
+
+/* FEED & POSTS */
+function startApp() {
+    // Nutzerliste für Avatare laden
+    onSnapshot(collection(db, "users"), (snap) => {
+        snap.forEach(doc => allUsers[doc.id] = doc.data());
+        renderAdminSidebar();
+    });
+
+    // Posts laden (Echtzeit)
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snap) => {
+        const posts = [];
+        snap.forEach(doc => posts.push({id: doc.id, ...doc.data()}));
+        renderFeed(posts);
+    });
+}
+
+el("btn-post").onclick = async () => {
+    const text = el("post-text").value.trim();
+    if(!text) return;
+    const video = extractYT(el("post-video").value);
+    const img = el("post-img").value.trim();
+    
+    await addDoc(collection(db, "posts"), {
+        author: currentUser,
+        text,
+        video,
+        img,
+        timestamp: Date.now(),
+        likes: [],
+        comments: []
+    });
+    
+    el("post-text").value = ""; el("post-video").value = ""; el("post-img").value = "";
+};
+
+function extractYT(url){const m=url.match(/(?:v=|\.be\/)([^&]+)/);return m?m[1]:null;}
+
+window.likePost = async (id, likes) => {
+    if(likes.includes(currentUser)) return;
+    await updateDoc(doc(db, "posts", id), {
+        likes: arrayUnion(currentUser)
+    });
+};
+
+window.addComment = async (id) => {
+    const msg = prompt("Dein Kommentar:");
+    if(!msg) return;
+    const postRef = doc(db, "posts", id);
+    const snap = await getDoc(postRef);
+    const comments = snap.data().comments || [];
+    comments.push({u: currentUser, t: msg});
+    await updateDoc(postRef, { comments });
+};
+
+window.deletePost = async (id) => {
+    if(!isAdmin(currentUser)) return;
+    if(confirm("Post wirklich löschen?")) await deleteDoc(doc(db, "posts", id));
+};
+
+function renderFeed(posts) {
+    el("feed").innerHTML = posts.map(p => `
+        <div class="post">
+            <div class="post-header">
+                <img class="avatar" src="${allUsers[p.author]?.skin || ''}">
+                <b class="username" onclick="window.showProfile('${p.author}')">${p.author}</b>
+                ${isAdmin(p.author) ? '<span class="admin-badge">ADMIN</span>' : ''}
+            </div>
+            <div class="post-body">${p.text}</div>
+            ${p.video ? `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" frameborder="0"></iframe></div>` : ""}
+            ${p.img ? `<img class="post-img" src="${p.img}">` : ""}
+            <div class="post-footer">
+                <span onclick="likePost('${p.id}', ${JSON.stringify(p.likes)})" style="cursor:pointer">⛏️ ${p.likes.length}</span>
+                <span onclick="addComment('${p.id}')" style="cursor:pointer">💬 ${p.comments.length}</span>
+                ${isAdmin(currentUser) ? `<span onclick="deletePost('${p.id}')" style="cursor:pointer">🗑</span>` : ""}
+            </div>
+            <div class="comment-box ${p.comments.length === 0 ? 'hidden' : ''}">
+                ${p.comments.map(c => `<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}
+            </div>
+        </div>
+    `).join("");
+}
+
+/* PROFILE */
+window.showProfile = async (u) => {
+    const user = allUsers[u];
+    el("feed").innerHTML = `
+    <div class="profile">
+        <img src="${user.skin}">
+        <h2>${u}</h2>
+        <p>${user.bio}</p>
+        <div class="stats"><div>Status: ${user.status}</div></div>
+        <button class="btn" onclick="location.reload()">⬅ Zurück</button>
+    </div>`;
+};
+
+/* ADMIN */
+el("admin-trigger").onclick = () => {
+    if(!isAdmin(currentUser)) return;
+    el("admin-overlay").style.display = "block";
+    el("admin-sidebar").style.display = "block";
+};
+el("admin-close").onclick = () => {
+    el("admin-overlay").style.display = "none";
+    el("admin-sidebar").style.display = "none";
+};
+
+function renderAdminSidebar() {
+    const container = el("admin-users");
+    container.innerHTML = Object.keys(allUsers).map(u => `
+        <div class="user-item">
+            <span>${u}</span>
+            ${u !== currentUser ? `<button onclick="window.deleteUser('${u}')" style="background:red;color:white;border:none;cursor:pointer">X</button>` : ""}
+        </div>
+    `).join("");
+}
+
+window.deleteUser = async (u) => {
+    if(confirm(`User ${u} wirklich löschen?`)) {
+        await deleteDoc(doc(db, "users", u));
+    }
+};
+</script>
+</body>
+</html>
