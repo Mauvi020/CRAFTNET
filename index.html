@@ -2,211 +2,119 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>CraftNet Ultimate</title>
+<title>CraftNet</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;}
-body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
-.hidden{display:none!important;}
-header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
-.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';}
-.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;}
+body{margin:0;background:#1e1e1e;color:white;font-family:'VT323'}
+.hidden{display:none}
+header{background:#866043;padding:10px 20px;border-bottom:4px solid #000;display:flex;justify-content:space-between}
+.header-title{font-family:'Press Start 2P';color:#3f3;cursor:pointer}
+.avatar{width:40px;height:40px;border:2px solid #000}
 .container{max-width:700px;margin:20px auto;padding:0 10px}
-
-.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
-.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
-.post-body{padding:15px;font-size:1.5rem}
-.post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
-.username{cursor:pointer;color:var(--green)}
-
-.comment-box{background:#222;border-top:1px solid #444;padding:8px}
-.comment{font-size:1.1rem;margin:4px 0}
-.comment b{color:var(--green)}
-
-.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
-.profile img{width:96px;border:3px solid #000}
-.stats{display:flex;justify-content:space-around;margin:10px 0}
-
-.friend-request{display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid #555}
-
-input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
-.btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
-.btn-green{background:var(--green);color:white}
-
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
-.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
-.error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
-
-.video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
-.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
-.post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
+.post{background:#333;border:3px solid #000;margin-bottom:15px;padding:10px}
+input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555}
+.btn{width:100%;padding:10px;margin-top:8px;font-family:'Press Start 2P';font-size:.6rem;cursor:pointer}
+.btn-green{background:#5da03b;color:white}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center}
+.card{background:#888;border:4px solid #000;padding:20px;width:340px;text-align:center}
+.error{background:#ffaaaa;color:#900;padding:6px;border:2px solid #000;margin-bottom:6px}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="auth-modal" class="modal">
-<div class="card">
-<h2 style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
-<div id="auth-error" class="error hidden"></div>
-<input id="auth-user" placeholder="Name">
-<input id="auth-pass" type="password" placeholder="Passwort (min.4)">
-<input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
-<button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
-<p id="toggle-auth" style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()">Noch kein Account? Registrieren</p>
-</div>
+<div id="auth" class="modal">
+  <div class="card">
+    <h2 style="font-family:'Press Start 2P';font-size:.8rem">LOGIN / REGISTER</h2>
+    <div id="error" class="error hidden"></div>
+    <input id="user" placeholder="Name">
+    <input id="pass" type="password" placeholder="Passwort (min.4)">
+    <button class="btn btn-green" onclick="login()">BETRETEN</button>
+    <p style="font-size:.7rem">Neuer Name = Auto-Registrierung</p>
+  </div>
 </div>
 
 <header>
-<div class="header-title" onclick="openMainMenu()">CRAFTNET</div>
-<div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
-<span id="nav-name"></span>
-<img id="nav-avatar" class="avatar">
-</div>
+  <div class="header-title" onclick="menu()">CRAFTNET</div>
+  <div id="nav" class="hidden">
+    <span id="nav-name"></span>
+    <img id="nav-img" class="avatar">
+  </div>
 </header>
 
 <div id="main" class="container hidden">
-<div class="post" style="padding:15px;background:#444">
-<textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
-<input id="post-video" placeholder="YouTube Link (optional)">
-<input id="post-img" placeholder="Bild URL (optional)">
-<button class="btn btn-green" onclick="createPost()">POSTEN</button>
-</div>
-<div id="feed"></div>
+  <div class="post">
+    <textarea id="text" placeholder="Was gibt's Neues?"></textarea>
+    <button class="btn btn-green" onclick="post()">POSTEN</button>
+  </div>
+  <div id="feed"></div>
 </div>
 
 <script>
-let isLoginMode=true,currentUser=null;
-let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
-let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
-let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
+let users=JSON.parse(localStorage.getItem("users")||"{}");
+let posts=JSON.parse(localStorage.getItem("posts")||"[]");
+let me=null;
 
-const el=id=>document.getElementById(id);
-const save=()=>{localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));}
+const $=id=>document.getElementById(id);
+const save=()=>{localStorage.setItem("users",JSON.stringify(users));localStorage.setItem("posts",JSON.stringify(posts));}
 
-/* AUTH */
-function toggleAuthMode(){
-isLoginMode=!isLoginMode;
-el("auth-skin").classList.toggle("hidden",isLoginMode);
-el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
-}
-function showError(m){el("auth-error").innerText=m;el("auth-error").classList.remove("hidden");}
-function handleAuth(){
-const n=el("auth-user").value.trim(),p=el("auth-pass").value,s=el("auth-skin").value.trim();
-if(!n||p.length<4)return showError("Name & Passwort nötig!");
-if(isLoginMode){
-if(users[n]&&users[n].pass===p)loginUser(n);else showError("Falsche Daten!");
-}else{
-if(users[n])return showError("Name vergeben!");
-users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"",friends:[]};
-save();toggleAuthMode();
-}
-}
-function loginUser(n){
-currentUser=n;
-el("auth-modal").classList.add("hidden");
-el("main").classList.remove("hidden");
-el("nav-info").classList.remove("hidden");
-el("nav-name").innerText=n;
-el("nav-avatar").src=users[n].skin;
-renderFeed();
+function err(m){$("error").innerText=m;$("error").classList.remove("hidden");}
+
+function login(){
+  const u=$("user").value.trim();
+  const p=$("pass").value;
+  if(!u||p.length<4) return err("Name & Passwort nötig");
+
+  // 🔥 AUTO REGISTER
+  if(!users[u]){
+    users[u]={pass:p,skin:`https://minotar.net/avatar/${u}`};
+    save();
+  }
+
+  if(users[u].pass!==p) return err("Falsches Passwort");
+
+  me=u;
+  $("auth").classList.add("hidden");
+  $("main").classList.remove("hidden");
+  $("nav").classList.remove("hidden");
+  $("nav-name").innerText=u;
+  $("nav-img").src=users[u].skin;
+  render();
 }
 
-/* POSTS */
-function createPost(){
-const t=el("post-text").value.trim(); if(!t)return;
-posts.unshift({id:Date.now(),author:currentUser,text:t,video:extractYT(el("post-video").value),img:el("post-img").value,likes:[],comments:[]});
-el("post-text").value=el("post-video").value=el("post-img").value="";
-save();renderFeed();
-}
-const extractYT=u=>{const m=u.match(/(?:v=|\.be\/)([^&]+)/);return m?m[1]:null;}
-function likePost(id){const p=posts.find(x=>x.id===id);if(!p.likes.includes(currentUser))p.likes.push(currentUser);save();renderFeed();}
-function addComment(id){const m=prompt("Kommentar:");if(!m)return;posts.find(p=>p.id===id).comments.push({u:currentUser,t:m});save();renderFeed();}
-
-/* FEED */
-function renderFeed(){
-el("feed").innerHTML="";
-posts.forEach(p=>{
-el("feed").innerHTML+=`
-<div class="post">
-<div class="post-header">
-<img class="avatar" src="${users[p.author].skin}">
-<b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
-</div>
-<div class="post-body">${p.text}</div>
-${p.video?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" allowfullscreen></iframe></div>`:""}
-${p.img?`<img class="post-img" src="${p.img}">`:""}
-<div class="post-footer">
-<span onclick="likePost(${p.id})">⛏️ ${p.likes.length}</span>
-<span onclick="addComment(${p.id})">💬 ${p.comments.length}</span>
-</div>
-<div class="comment-box">${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}</div>
-</div>`;
-});
+function post(){
+  const t=$("text").value.trim();
+  if(!t) return;
+  posts.unshift({u:me,t});
+  $("text").value="";
+  save();render();
 }
 
-/* PROFILE */
-function showProfile(u){
-const user=users[u];
-el("feed").innerHTML=`
-<div class="profile">
-<img src="${user.skin}">
-<h2>${u}</h2>
-<textarea ${u!==currentUser?"disabled":""} onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
-<input ${u!==currentUser?"disabled":""} value="${user.status}" onchange="users['${u}'].status=this.value;save()">
-<div class="stats">
-<div>📄 ${posts.filter(p=>p.author===u).length}</div>
-<div>🤝 ${user.friends.length}</div>
-</div>
-${u!==currentUser?`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`:""}
-<button class="btn" onclick="renderFeed()">⬅ Zurück</button>
-</div>`;
+function render(){
+  $("feed").innerHTML="";
+  posts.forEach(p=>{
+    $("feed").innerHTML+=`
+      <div class="post">
+        <b>${p.u}</b><br>${p.t}
+      </div>`;
+  });
 }
 
-/* FRIENDS */
-function sendFriendRequest(to){
-friendRequests[to]=friendRequests[to]||[];
-if(!friendRequests[to].includes(currentUser))friendRequests[to].push(currentUser);
-save();alert("Anfrage gesendet!");
-}
-function respondFriendRequest(from,ok){
-friendRequests[currentUser]=friendRequests[currentUser].filter(f=>f!==from);
-if(ok){users[currentUser].friends.push(from);users[from].friends.push(currentUser);}
-save();openFriendsMenu();
+function menu(){
+  if(!me) return;
+  $("feed").innerHTML=`
+    <div class="post">
+      <button class="btn btn-green" onclick="render()">Feed</button>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>`;
 }
 
-/* MAIN MENU */
-function openMainMenu(){
-const c=(friendRequests[currentUser]||[]).length;
-el("feed").innerHTML=`
-<div class="post" style="padding:15px">
-<h3>📋 Menü</h3>
-<button class="btn btn-green" onclick="renderFeed()">📰 Feed</button>
-<button class="btn" onclick="showProfile('${currentUser}')">👤 Profil</button>
-<button class="btn" onclick="openFriendsMenu()">🤝 Anfragen ${c?`(${c})`:""}</button>
-<button class="btn" onclick="logout()">🚪 Logout</button>
-</div>`;
-}
-function openFriendsMenu(){
-const r=friendRequests[currentUser]||[];
-el("feed").innerHTML=`
-<div class="post" style="padding:15px">
-<h3>🤝 Freundesanfragen</h3>
-${r.length?r.map(u=>`
-<div class="friend-request">${u}
-<span>
-<button class="btn" onclick="respondFriendRequest('${u}',true)">✅</button>
-<button class="btn" onclick="respondFriendRequest('${u}',false)">❌</button>
-</span></div>`).join(""):"Keine Anfragen"}
-<button class="btn" onclick="openMainMenu()">⬅ Zurück</button>
-</div>`;
-}
 function logout(){
-currentUser=null;
-el("main").classList.add("hidden");
-el("auth-modal").classList.remove("hidden");
-el("nav-info").classList.add("hidden");
+  me=null;
+  $("main").classList.add("hidden");
+  $("auth").classList.remove("hidden");
+  $("nav").classList.add("hidden");
 }
 </script>
 </body>
