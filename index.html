@@ -88,21 +88,16 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 </div>
 
 <script>
-/* ===== GLOBAL ===== */
 const ADMIN_USERS=["Mauvi_"];
 let isLoginMode=true,currentUser=null;
 let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
 let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
 let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
 let chats=JSON.parse(localStorage.getItem("cn_chats")||{});
+
 const el=id=>document.getElementById(id);
 const isAdmin=u=>ADMIN_USERS.includes(u);
-function save(){
-    localStorage.setItem("cn_users",JSON.stringify(users));
-    localStorage.setItem("cn_posts",JSON.stringify(posts));
-    localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));
-    localStorage.setItem("cn_chats",JSON.stringify(chats));
-}
+function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));localStorage.setItem("cn_chats",JSON.stringify(chats));}
 
 /* ===== AUTH ===== */
 function toggleAuthMode(){
@@ -111,32 +106,27 @@ function toggleAuthMode(){
     el("auth-skin").classList.toggle("hidden",isLoginMode);
     el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
 }
-function showError(msg){
-    el("auth-error").innerText=msg;
-    el("auth-error").classList.remove("hidden");
-}
+function showError(msg){el("auth-error").innerText=msg;el("auth-error").classList.remove("hidden");}
 function handleAuth(){
-    const username = el("auth-user").value.trim();
-    const password = el("auth-pass").value;
-    const skin = el("auth-skin").value.trim();
-    if(!username||password.length<4) return showError("Name & Passwort nötig!");
+    const n=el("auth-user").value.trim();
+    const p=el("auth-pass").value;
+    const s=el("auth-skin").value.trim();
+    if(!n||p.length<4)return showError("Name & Passwort nötig!");
     if(isLoginMode){
-        if(users[username] && users[username].pass === password){
-            loginUser(username);
-        } else { showError("Falsche Daten!"); }
-    } else {
-        if(users[username]) return showError("Name vergeben!");
-        users[username]={pass:password,skin:skin.includes("http")?skin:`https://minotar.net/avatar/${skin||username}`,bio:"",status:"Hey 👋",friends:[]};
-        save(); alert("Registriert! Jetzt einloggen."); toggleAuthMode();
+        if(users[n]&&users[n].pass===p)loginUser(n);else showError("Falsche Daten!");
+    }else{
+        if(users[n]) return showError("Name vergeben!");
+        users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"Hey 👋",friends:[]};
+        save();alert("Registriert! Jetzt einloggen.");toggleAuthMode();
     }
 }
-function loginUser(username){
-    currentUser=username;
+function loginUser(n){
+    currentUser=n;
     el("auth-modal").classList.add("hidden");
     el("main").classList.remove("hidden");
     el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText=username + (isAdmin(username)?" [ADMIN]":"");
-    el("nav-avatar").src=users[username].skin;
+    el("nav-name").innerText=n+(isAdmin(n)?" [ADMIN]":"");
+    el("nav-avatar").src=users[n].skin;
     renderFeed();
 }
 
@@ -155,27 +145,39 @@ function addComment(id){const msg=prompt("Kommentar schreiben:");if(!msg)return;
 function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();renderFeed();}
 function deletePost(id){posts=posts.filter(p=>p.id!==id);save();renderFeed();}
 
-/* ===== FRIENDS ===== */
+/* ===== FRIEND SYSTEM ===== */
 function sendFriendRequest(toUser){
-    if(!friendRequests[toUser]) friendRequests[toUser]=[];
-    if(friendRequests[toUser].includes(currentUser)) return alert("Anfrage schon gesendet!");
+    if(!friendRequests[toUser])friendRequests[toUser]=[];
+    if(friendRequests[toUser].includes(currentUser))return alert("Anfrage schon gesendet!");
     friendRequests[toUser].push(currentUser);
-    save(); alert("Freundesanfrage gesendet!");
+    save();
+    alert("Freundesanfrage gesendet!");
 }
 function respondFriendRequest(fromUser,accept){
     friendRequests[currentUser]=friendRequests[currentUser].filter(u=>u!==fromUser);
-    if(accept){ users[currentUser].friends.push(fromUser); users[fromUser].friends.push(currentUser); }
-    save(); showProfile(currentUser);
+    if(accept){
+        users[currentUser].friends.push(fromUser);
+        users[fromUser].friends.push(currentUser);
+    }
+    save();showProfile(currentUser);
 }
 
 /* ===== CHAT ===== */
 function openChat(friend){
     const chatId=[currentUser,friend].sort().join("_");
     if(!chats[chatId]) chats[chatId]=[];
-    let html=`<div class="post"><h3>Chat mit ${friend}</h3><div class="chat-box">`;
-    chats[chatId].forEach(m=>html+=`<div class="chat-message"><b>${m.u}:</b> ${m.t}</div>`);
-    html+=`</div><input id="chat-input" placeholder="Nachricht schreiben"><button class="btn btn-green" onclick="sendChat('${chatId}','${friend}')">Senden</button><button class="btn" onclick="showProfile('${friend}')">⬅ Zurück</button></div>`;
-    el("feed").innerHTML=html;
+    let chatHTML=`<div class="post">
+        <h3>Chat mit ${friend}</h3>
+        <div class="chat-box">`;
+    chats[chatId].forEach(m=>{
+        chatHTML+=`<div class="chat-message"><b>${m.u}:</b> ${m.t}</div>`;
+    });
+    chatHTML+=`</div>
+        <input id="chat-input" placeholder="Nachricht schreiben">
+        <button class="btn btn-green" onclick="sendChat('${chatId}','${friend}')">Senden</button>
+        <button class="btn" onclick="showProfile('${friend}')">⬅ Zurück</button>
+    </div>`;
+    el("feed").innerHTML=chatHTML;
 }
 function sendChat(chatId,friend){
     const msg=el("chat-input").value.trim();
@@ -190,31 +192,49 @@ function sendChat(chatId,friend){
 function openMenu(){
     if(!currentUser) return;
     let html=`<div class="post" style="text-align:left;padding:10px">
-        <h3>Menü</h3><p>Angemeldet als: <b>${currentUser}</b> ${isAdmin(currentUser)?"[ADMIN]":""}</p>
+        <h3>Menü</h3>
+        <p>Angemeldet als: <b>${currentUser}</b> ${isAdmin(currentUser)?"[ADMIN]":""}</p>
         <button class="btn" onclick="showProfile('${currentUser}')">🧍 Mein Profil</button>
         <button class="btn" onclick="renderFeed()">⬅ Zurück zum Feed</button>
-        <h4>Freunde</h4>`;
-    users[currentUser].friends.forEach(f=> html+=`${f} <button class="friend-btn" onclick="openChat('${f}')">Chat</button><br>`);
+    `;
+    // Freundesliste & Anfragen
+    html+=`<h4>Freunde</h4>`;
+    users[currentUser].friends.forEach(f=>{
+        html+=`${f} <button class="friend-btn" onclick="openChat('${f}')">Chat</button><br>`;
+    });
     html+=`<h4>Freundesanfragen</h4>`;
     const reqs=friendRequests[currentUser]||[];
     if(reqs.length===0) html+="Keine Anfragen<br>";
-    reqs.forEach(u=>html+=`${u} <button class="friend-btn" onclick="respondFriendRequest('${u}',true)">✅</button> <button class="friend-btn" onclick="respondFriendRequest('${u}',false)">❌</button><br>`);
+    reqs.forEach(u=>{
+        html+=`${u} <button class="friend-btn" onclick="respondFriendRequest('${u}',true)">✅</button> <button class="friend-btn" onclick="respondFriendRequest('${u}',false)">❌</button><br>`;
+    });
+    // Admin-Optionen
     if(isAdmin(currentUser)){
         html+=`<h4>Admin Optionen</h4>`;
-        Object.keys(users).forEach(u=>{ if(u!==currentUser) html+=`${u} <button class="btn" onclick="deleteUser('${u}')">Löschen</button><br>`; else html+=`${u} [ADMIN]<br>`;});
+        Object.keys(users).forEach(u=>{
+            if(u!==currentUser){
+                html+=`${u} <button class="btn" onclick="deleteUser('${u}')">Löschen</button><br>`;
+            }else{
+                html+=`${u} [ADMIN]<br>`;
+            }
+        });
     }
-    html+="</div>"; el("feed").innerHTML=html;
+    html+="</div>";
+    el("feed").innerHTML=html;
 }
 function deleteUser(u){
-    if(!isAdmin(currentUser)||!users[u]||ADMIN_USERS.includes(u)) return alert("Nicht erlaubt!");
-    delete users[u]; posts=posts.filter(p=>p.author!==u);
+    if(!isAdmin(currentUser)||!users[u]||ADMIN_USERS.includes(u))return alert("Nicht erlaubt!");
+    delete users[u];
+    posts=posts.filter(p=>p.author!==u);
     if(friendRequests[u]) delete friendRequests[u];
     Object.keys(friendRequests).forEach(k=>friendRequests[k]=friendRequests[k].filter(f=>f!==u));
-    Object.keys(chats).forEach(c=>{if(c.includes(u)) delete chats[c];});
-    save(); renderFeed();
+    Object.keys(chats).forEach(c=>{
+        if(c.includes(u)) delete chats[c];
+    });
+    save();renderFeed();
 }
 
-/* ===== FEED ===== */
+/* ===== RENDER FEED ===== */
 function renderFeed(){
     el("feed").innerHTML="";
     posts.forEach(p=>{
@@ -233,18 +253,26 @@ function renderFeed(){
                 <span onclick="addComment(${p.id})" style="cursor:pointer">💬 ${p.comments.length}</span>
                 ${isAdmin(currentUser)?`<span onclick="deletePost(${p.id})" style="cursor:pointer">🗑</span>`:""}
             </div>
-            <div class="comment-box ${p.comments.length===0?'hidden':''}">${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}</div>
+            <div class="comment-box ${p.comments.length===0?'hidden':''}">
+                ${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}
+            </div>
         </div>`;
     });
 }
 
 /* ===== PROFILE ===== */
 function showProfile(u){
-    const user=users[u]; const count=posts.filter(p=>p.author===u).length;
-    let html=`<div class="profile"><img src="${user.skin}"><h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
+    const user=users[u];
+    const count=posts.filter(p=>p.author===u).length;
+    let html=`<div class="profile">
+        <img src="${user.skin}">
+        <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
         <textarea ${u!==currentUser?'disabled':''} onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
         <input ${u!==currentUser?'disabled':''} value="${user.status}" onchange="users['${u}'].status=this.value;save()">
-        <div class="stats"><div>📄 ${count}<br>Posts</div><div>🤝 ${user.friends.length}<br>Freunde</div></div>`;
+        <div class="stats">
+            <div>📄 ${count}<br>Posts</div>
+            <div>🤝 ${user.friends.length}<br>Freunde</div>
+        </div>`;
     if(u!==currentUser){
         if(!users[currentUser].friends.includes(u)) html+=`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`;
         else html+=`<button class="btn" onclick="openChat('${u}')">Chat öffnen</button>`;
