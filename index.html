@@ -5,7 +5,6 @@
 <title>CraftNet Ultimate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-
 <style>
 :root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;}
 body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
@@ -22,18 +21,26 @@ header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;dis
 .username{cursor:pointer;color:var(--green)}
 
 .comment-box{background:#222;border-top:1px solid #444;padding:8px}
+.comment{font-size:1.1rem;margin:4px 0}
 .comment b{color:var(--green)}
 
 .profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
 .profile img{width:96px;border:3px solid #000}
+.stats{display:flex;justify-content:space-around;margin:10px 0}
 
-input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
+.friend-request{display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid #555}
+
+input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
 .btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
 .btn-green{background:var(--green);color:white}
 
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
 .card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
 .error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
+
+.video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
+.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
+.post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
 </style>
 </head>
 <body>
@@ -62,6 +69,8 @@ input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;bo
 <div id="main" class="container hidden">
 <div class="post" style="padding:15px;background:#444">
 <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+<input id="post-video" placeholder="YouTube Link (optional)">
+<input id="post-img" placeholder="Bild URL (optional)">
 <button class="btn btn-green" onclick="createPost()">POSTEN</button>
 </div>
 <div id="feed"></div>
@@ -78,114 +87,127 @@ const save=()=>{localStorage.setItem("cn_users",JSON.stringify(users));localStor
 
 /* AUTH */
 function toggleAuthMode(){
-    isLoginMode=!isLoginMode;
-    el("auth-skin").classList.toggle("hidden",isLoginMode);
-    el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
-    el("auth-error").classList.add("hidden");
+isLoginMode=!isLoginMode;
+el("auth-skin").classList.toggle("hidden",isLoginMode);
+el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
 }
-function showError(m){
-    el("auth-error").innerText=m;
-    el("auth-error").classList.remove("hidden");
-}
+function showError(m){el("auth-error").innerText=m;el("auth-error").classList.remove("hidden");}
 function handleAuth(){
-    const n=el("auth-user").value.trim();
-    const p=el("auth-pass").value;
-    const s=el("auth-skin").value.trim();
-
-    if(!n||p.length<4) return showError("Name & Passwort nötig!");
-
-    if(isLoginMode){
-        if(users[n] && users[n].pass===p){
-            loginUser(n);
-        } else showError("Falsche Daten!");
-    } else {
-        if(users[n]) return showError("Name vergeben!");
-        users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,friends:[]};
-        save();
-        toggleAuthMode();
-        alert("Registriert! Jetzt einloggen.");
-    }
+const n=el("auth-user").value.trim(),p=el("auth-pass").value,s=el("auth-skin").value.trim();
+if(!n||p.length<4)return showError("Name & Passwort nötig!");
+if(isLoginMode){
+if(users[n]&&users[n].pass===p)loginUser(n);else showError("Falsche Daten!");
+}else{
+if(users[n])return showError("Name vergeben!");
+users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"",friends:[]};
+save();toggleAuthMode();
+}
 }
 function loginUser(n){
-    currentUser=n;
-    el("auth-error").classList.add("hidden");
-    el("auth-modal").classList.add("hidden");
-    el("main").classList.remove("hidden");
-    el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText=n;
-    el("nav-avatar").src=users[n].skin;
-    renderFeed();
+currentUser=n;
+el("auth-modal").classList.add("hidden");
+el("main").classList.remove("hidden");
+el("nav-info").classList.remove("hidden");
+el("nav-name").innerText=n;
+el("nav-avatar").src=users[n].skin;
+renderFeed();
 }
 
 /* POSTS */
 function createPost(){
-    const t=el("post-text").value.trim();
-    if(!t) return;
-    posts.unshift({id:Date.now(),author:currentUser,text:t,likes:[],comments:[]});
-    el("post-text").value="";
-    save();renderFeed();
+const t=el("post-text").value.trim(); if(!t)return;
+posts.unshift({id:Date.now(),author:currentUser,text:t,video:extractYT(el("post-video").value),img:el("post-img").value,likes:[],comments:[]});
+el("post-text").value=el("post-video").value=el("post-img").value="";
+save();renderFeed();
 }
-function likePost(id){
-    const p=posts.find(x=>x.id===id);
-    if(!p.likes.includes(currentUser)) p.likes.push(currentUser);
-    save();renderFeed();
-}
-function addComment(id){
-    const m=prompt("Kommentar:");
-    if(!m) return;
-    posts.find(p=>p.id===id).comments.push({u:currentUser,t:m});
-    save();renderFeed();
-}
+const extractYT=u=>{const m=u.match(/(?:v=|\.be\/)([^&]+)/);return m?m[1]:null;}
+function likePost(id){const p=posts.find(x=>x.id===id);if(!p.likes.includes(currentUser))p.likes.push(currentUser);save();renderFeed();}
+function addComment(id){const m=prompt("Kommentar:");if(!m)return;posts.find(p=>p.id===id).comments.push({u:currentUser,t:m});save();renderFeed();}
 
 /* FEED */
 function renderFeed(){
-    el("feed").innerHTML="";
-    posts.forEach(p=>{
-        el("feed").innerHTML+=`
-        <div class="post">
-        <div class="post-header">
-            <img class="avatar" src="${users[p.author].skin}">
-            <b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
-        </div>
-        <div class="post-body">${p.text}</div>
-        <div class="post-footer">
-            <span onclick="likePost(${p.id})">⛏️ ${p.likes.length}</span>
-            <span onclick="addComment(${p.id})">💬 ${p.comments.length}</span>
-        </div>
-        <div class="comment-box">
-            ${p.comments.map(c=>`<div><b>${c.u}:</b> ${c.t}</div>`).join("")}
-        </div>
-        </div>`;
-    });
+el("feed").innerHTML="";
+posts.forEach(p=>{
+el("feed").innerHTML+=`
+<div class="post">
+<div class="post-header">
+<img class="avatar" src="${users[p.author].skin}">
+<b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
+</div>
+<div class="post-body">${p.text}</div>
+${p.video?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" allowfullscreen></iframe></div>`:""}
+${p.img?`<img class="post-img" src="${p.img}">`:""}
+<div class="post-footer">
+<span onclick="likePost(${p.id})">⛏️ ${p.likes.length}</span>
+<span onclick="addComment(${p.id})">💬 ${p.comments.length}</span>
+</div>
+<div class="comment-box">${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}</div>
+</div>`;
+});
 }
 
 /* PROFILE */
 function showProfile(u){
-    el("feed").innerHTML=`
-    <div class="profile">
-    <img src="${users[u].skin}">
-    <h2>${u}</h2>
-    <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
-    </div>`;
+const user=users[u];
+el("feed").innerHTML=`
+<div class="profile">
+<img src="${user.skin}">
+<h2>${u}</h2>
+<textarea ${u!==currentUser?"disabled":""} onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
+<input ${u!==currentUser?"disabled":""} value="${user.status}" onchange="users['${u}'].status=this.value;save()">
+<div class="stats">
+<div>📄 ${posts.filter(p=>p.author===u).length}</div>
+<div>🤝 ${user.friends.length}</div>
+</div>
+${u!==currentUser?`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`:""}
+<button class="btn" onclick="renderFeed()">⬅ Zurück</button>
+</div>`;
 }
 
-/* MENU */
+/* FRIENDS */
+function sendFriendRequest(to){
+friendRequests[to]=friendRequests[to]||[];
+if(!friendRequests[to].includes(currentUser))friendRequests[to].push(currentUser);
+save();alert("Anfrage gesendet!");
+}
+function respondFriendRequest(from,ok){
+friendRequests[currentUser]=friendRequests[currentUser].filter(f=>f!==from);
+if(ok){users[currentUser].friends.push(from);users[from].friends.push(currentUser);}
+save();openFriendsMenu();
+}
+
+/* MAIN MENU */
 function openMainMenu(){
-    el("feed").innerHTML=`
-    <div class="post" style="padding:15px">
-    <h3>📋 Menü</h3>
-    <button class="btn btn-green" onclick="renderFeed()">📰 Feed</button>
-    <button class="btn" onclick="showProfile('${currentUser}')">👤 Profil</button>
-    <button class="btn" onclick="logout()">🚪 Logout</button>
-    </div>`;
+const c=(friendRequests[currentUser]||[]).length;
+el("feed").innerHTML=`
+<div class="post" style="padding:15px">
+<h3>📋 Menü</h3>
+<button class="btn btn-green" onclick="renderFeed()">📰 Feed</button>
+<button class="btn" onclick="showProfile('${currentUser}')">👤 Profil</button>
+<button class="btn" onclick="openFriendsMenu()">🤝 Anfragen ${c?`(${c})`:""}</button>
+<button class="btn" onclick="logout()">🚪 Logout</button>
+</div>`;
+}
+function openFriendsMenu(){
+const r=friendRequests[currentUser]||[];
+el("feed").innerHTML=`
+<div class="post" style="padding:15px">
+<h3>🤝 Freundesanfragen</h3>
+${r.length?r.map(u=>`
+<div class="friend-request">${u}
+<span>
+<button class="btn" onclick="respondFriendRequest('${u}',true)">✅</button>
+<button class="btn" onclick="respondFriendRequest('${u}',false)">❌</button>
+</span></div>`).join(""):"Keine Anfragen"}
+<button class="btn" onclick="openMainMenu()">⬅ Zurück</button>
+</div>`;
 }
 function logout(){
-    currentUser=null;
-    el("main").classList.add("hidden");
-    el("auth-modal").classList.remove("hidden");
-    el("nav-info").classList.add("hidden");
+currentUser=null;
+el("main").classList.add("hidden");
+el("auth-modal").classList.remove("hidden");
+el("nav-info").classList.add("hidden");
 }
 </script>
-
 </body>
 </html>
