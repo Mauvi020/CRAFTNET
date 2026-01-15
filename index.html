@@ -31,7 +31,7 @@ header{
     align-items:center;
 }
 .avatar{
-    width:48px;height:48px;
+    width:40px;height:40px;
     border:2px solid #000;
     image-rendering:pixelated;
 }
@@ -41,14 +41,19 @@ header{
 .post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
 .post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
 .post-body{padding:15px;font-size:1.5rem}
-.post-footer{background:#222;padding:10px;display:flex;gap:15px}
+.post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
 .username{cursor:pointer;color:var(--green)}
 .admin-badge{
     background:var(--admin);
     padding:2px 6px;
     border:2px solid #000;
-    font-size:.7rem;
+    font-size:.6rem;
 }
+
+/* COMMENTS */
+.comment-box{background:#222;border-top:1px solid #444;padding:8px}
+.comment{font-size:1.1rem;margin:4px 0}
+.comment b{color:var(--green)}
 
 /* PROFILE */
 .profile{
@@ -59,16 +64,6 @@ header{
 }
 .profile img{width:96px;border:3px solid #000}
 .stats{display:flex;justify-content:space-around;margin:10px 0}
-
-/* CHAT */
-.chat{
-    background:#111;
-    border:3px solid #000;
-    padding:10px;
-    height:220px;
-    overflow-y:auto;
-}
-.msg{margin:4px 0}
 
 /* INPUTS */
 input,textarea{
@@ -93,7 +88,7 @@ input,textarea{
 }
 .btn-green{background:var(--green);color:white}
 
-/* LOGIN MODAL */
+/* LOGIN */
 .modal{
     position:fixed;
     inset:0;
@@ -122,7 +117,7 @@ input,textarea{
 
 <body>
 
-<!-- LOGIN / REGISTER -->
+<!-- LOGIN -->
 <div id="auth-modal" class="modal">
     <div class="card">
         <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
@@ -154,28 +149,26 @@ input,textarea{
 </div>
 
 <script>
-/* ================= CONFIG ================= */
+/* ===== CONFIG ===== */
 const ADMIN_USERS = ["Mauvi_"];
 
-/* ================= STATE ================= */
+/* ===== STATE ===== */
 let isLoginMode = true;
 let currentUser = null;
 
 let users = JSON.parse(localStorage.getItem("cn_users")) || {};
 let posts = JSON.parse(localStorage.getItem("cn_posts")) || [];
-let chats = JSON.parse(localStorage.getItem("cn_chats")) || {};
 
-/* ================= HELPERS ================= */
+/* ===== HELPERS ===== */
 const el = id => document.getElementById(id);
 const isAdmin = u => ADMIN_USERS.includes(u);
 
 function save(){
     localStorage.setItem("cn_users", JSON.stringify(users));
     localStorage.setItem("cn_posts", JSON.stringify(posts));
-    localStorage.setItem("cn_chats", JSON.stringify(chats));
 }
 
-/* ================= AUTH ================= */
+/* ===== AUTH ===== */
 function toggleAuthMode(){
     isLoginMode = !isLoginMode;
     el("auth-title").innerText = isLoginMode ? "LOGIN" : "REGISTRIEREN";
@@ -195,28 +188,23 @@ function handleAuth(){
     const pass = el("auth-pass").value;
     const skinVal = el("auth-skin").value.trim();
 
-    if(!name || pass.length < 4){
+    if(!name || pass.length < 4)
         return showError("Name & Passwort nötig!");
-    }
 
     if(isLoginMode){
         if(users[name] && users[name].pass === pass){
             loginUser(name);
-        }else{
-            showError("Falsche Login-Daten!");
-        }
+        }else showError("Falsche Login-Daten!");
     }else{
-        if(users[name]) return showError("Name bereits vergeben!");
-        const avatar = skinVal.includes("http")
-            ? skinVal
-            : `https://minotar.net/avatar/${skinVal || name}.png`;
-
+        if(users[name]) return showError("Name vergeben!");
         users[name] = {
             pass,
-            skin: avatar,
-            bio: "",
-            status: "Hey 👋",
-            friends: []
+            skin: skinVal.includes("http")
+                ? skinVal
+                : `https://minotar.net/avatar/${skinVal || name}.png`,
+            bio:"",
+            status:"Hey 👋",
+            friends:[]
         };
         save();
         alert("Registriert! Jetzt einloggen.");
@@ -229,129 +217,84 @@ function loginUser(name){
     el("auth-modal").classList.add("hidden");
     el("main").classList.remove("hidden");
     el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText = name + (isAdmin(name) ? " [ADMIN]" : "");
+    el("nav-name").innerText = name + (isAdmin(name)?" [ADMIN]":"");
     el("nav-avatar").src = users[name].skin;
     renderFeed();
 }
 
-/* ================= POSTS ================= */
+/* ===== POSTS ===== */
 function createPost(){
     const text = el("post-text").value.trim();
     if(!text) return;
-
     posts.unshift({
-        id: Date.now(),
-        author: currentUser,
+        id:Date.now(),
+        author:currentUser,
         text,
-        likes: []
+        likes:[],
+        comments:[]
     });
-    el("post-text").value = "";
+    el("post-text").value="";
+    save();
+    renderFeed();
+}
+
+function addComment(id){
+    const msg = prompt("Kommentar schreiben:");
+    if(!msg) return;
+    const post = posts.find(p=>p.id===id);
+    post.comments.push({u:currentUser,t:msg});
     save();
     renderFeed();
 }
 
 function deletePost(id){
-    posts = posts.filter(p => p.id !== id);
+    posts = posts.filter(p=>p.id!==id);
     save();
     renderFeed();
 }
 
-/* ================= RENDER FEED ================= */
+/* ===== RENDER ===== */
 function renderFeed(){
-    el("feed").innerHTML = "";
-    posts.forEach(p => {
-        el("feed").innerHTML += `
+    el("feed").innerHTML="";
+    posts.forEach(p=>{
+        el("feed").innerHTML+=`
         <div class="post">
             <div class="post-header">
                 <img class="avatar" src="${users[p.author].skin}">
                 <b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
-                ${isAdmin(p.author) ? `<span class="admin-badge">ADMIN</span>` : ""}
+                ${isAdmin(p.author)?'<span class="admin-badge">ADMIN</span>':''}
             </div>
             <div class="post-body">${p.text}</div>
             <div class="post-footer">
-                <span>⛏️ ${p.likes.length}</span>
-                ${isAdmin(currentUser) ? `<span onclick="deletePost(${p.id})" style="cursor:pointer">🗑</span>` : ""}
+                <span onclick="addComment(${p.id})" style="cursor:pointer">💬 ${p.comments.length}</span>
+                ${isAdmin(currentUser)?`<span onclick="deletePost(${p.id})" style="cursor:pointer">🗑</span>`:""}
+            </div>
+            <div class="comment-box ${p.comments.length===0?'hidden':''}">
+                ${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}
             </div>
         </div>`;
     });
 }
 
-/* ================= PROFILE ================= */
+/* ===== PROFILE ===== */
 function showProfile(u){
     const user = users[u];
-    const userPosts = posts.filter(p => p.author === u);
-    const isFriend = user.friends.includes(currentUser);
-
-    el("feed").innerHTML = `
+    const count = posts.filter(p=>p.author===u).length;
+    el("feed").innerHTML=`
     <div class="profile">
         <img src="${user.skin}">
         <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
-
-        <textarea ${u!==currentUser?"disabled":""}
-            onchange="users['${u}'].bio=this.value;save()"
-            placeholder="Bio...">${user.bio}</textarea>
-
-        <input ${u!==currentUser?"disabled":""}
+        <textarea ${u!==currentUser?'disabled':''}
+            onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
+        <input ${u!==currentUser?'disabled':''}
             value="${user.status}"
             onchange="users['${u}'].status=this.value;save()">
-
         <div class="stats">
-            <div>📄 ${userPosts.length}<br>Posts</div>
+            <div>📄 ${count}<br>Posts</div>
             <div>🤝 ${user.friends.length}<br>Freunde</div>
         </div>
-
-        ${u!==currentUser ? `
-            <button class="btn" onclick="toggleFriend('${u}')">
-                ${isFriend ? "Freund entfernen" : "Freund hinzufügen"}
-            </button>
-            ${isFriend ? `<button class="btn" onclick="openChat('${u}')">CHAT</button>` : ""}
-        ` : ""}
-
         <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
-    </div>
-    `;
-}
-
-/* ================= FRIENDS ================= */
-function toggleFriend(u){
-    const a = users[currentUser].friends;
-    const b = users[u].friends;
-
-    if(a.includes(u)){
-        users[currentUser].friends = a.filter(x=>x!==u);
-        users[u].friends = b.filter(x=>x!==currentUser);
-    }else{
-        a.push(u);
-        b.push(currentUser);
-    }
-    save();
-    showProfile(u);
-}
-
-/* ================= CHAT ================= */
-function openChat(u){
-    const chatId = [currentUser,u].sort().join("-");
-    chats[chatId] = chats[chatId] || [];
-
-    el("feed").innerHTML = `
-    <div class="profile">
-        <h3>Chat mit ${u}</h3>
-        <div class="chat">
-            ${chats[chatId].map(m=>`<div class="msg"><b>${m.u}:</b> ${m.t}</div>`).join("")}
-        </div>
-        <input id="chat-msg" placeholder="Nachricht...">
-        <button class="btn" onclick="sendMsg('${chatId}','${u}')">SENDEN</button>
-        <button class="btn" onclick="showProfile('${u}')">⬅ Zurück</button>
-    </div>
-    `;
-}
-
-function sendMsg(id,u){
-    const msg = el("chat-msg").value.trim();
-    if(!msg) return;
-    chats[id].push({u:currentUser,t:msg});
-    save();
-    openChat(u);
+    </div>`;
 }
 </script>
 
