@@ -20,30 +20,30 @@ header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;dis
 .menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:0.5rem;text-align:center;color:white;text-decoration:none;display:block;}
 .menu-item:hover{background:var(--green);}
 
-/* CHAT SYSTEM */
+/* CHAT WINDOW */
 .chat-window{position:fixed;bottom:0;right:20px;width:320px;height:450px;background:#222;border:3px solid #000;display:flex;flex-direction:column;z-index:2000;box-shadow: 0 0 20px rgba(0,0,0,0.5);}
 .chat-header{background:var(--green);padding:10px;display:flex;justify-content:space-between;font-family:'Press Start 2P';font-size:0.5rem;align-items:center;border-bottom:2px solid #000;}
 .chat-messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#111;}
 .msg{padding:8px 12px;border-radius:4px;max-width:85%;font-size:1.2rem;word-wrap:break-word;border:1px solid rgba(255,255,255,0.1);}
 .msg.me{background:var(--green);align-self:flex-end;color:white;}
 .msg.them{background:#333;align-self:flex-start;color:#3f3;}
-.chat-img{max-width:100%; border:1px solid #000; margin-top:5px; display:block;}
 
 /* POSTS */
 .post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
 .post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
 .post-body{padding:15px;font-size:1.5rem;word-wrap:break-word;}
 .post-footer{background:#222;padding:10px;display:flex;gap:20px;font-size:1.2rem;border-top:1px solid #444;align-items:center;}
-.like-btn{cursor:pointer; transition: 0.2s;}
+.like-btn{cursor:pointer;}
 .liked{color: var(--red);}
 
-/* UI */
+/* UI / MODAL */
 input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323';font-size:1.2rem;}
 .btn{padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.5rem}
 .btn-green{background:var(--green);color:white}
 .btn-red{background:var(--red);color:white}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000}
 .card{background:#8b8b8b;border:4px solid #000;padding:20px;width:90%;max-width:400px;text-align:center;}
+.comment-box{max-height:200px; overflow-y:auto; text-align:left; background:#111; padding:10px; border:2px solid #000; margin:10px 0;}
 </style>
 </head>
 <body>
@@ -96,7 +96,7 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
@@ -118,7 +118,7 @@ const el = id => document.getElementById(id);
 
 el("menu-trigger").onclick = () => el("side-menu").classList.toggle("open");
 
-/* --- AUTH --- */
+/* --- LOGIN / REGISTER --- */
 el("toggle-auth").onclick = () => {
     const isLogin = el("auth-title").innerText === "LOGIN";
     el("auth-title").innerText = isLogin ? "REGISTRIEREN" : "LOGIN";
@@ -182,7 +182,7 @@ function startApp() {
                     </div>
                     <div class="post-body">
                         ${p.text}
-                        ${ytId ? `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytId}" frameborder="0" style="width:100%; height:300px"></iframe></div>` : ""}
+                        ${ytId ? `<iframe src="https://www.youtube.com/embed/${ytId}" frameborder="0" style="width:100%; height:300px"></iframe>` : ""}
                         ${(p.media && !ytId) ? `<img src="${p.media}" style="width:100%;margin-top:10px;border:2px solid #000">` : ""}
                     </div>
                     <div class="post-footer">
@@ -197,28 +197,40 @@ function startApp() {
     });
 }
 
+/* --- KOMMENTAR-FUNKTION --- */
 window.showComments = async (postId) => {
     const postSnap = await getDoc(doc(db, "posts", postId));
     const p = postSnap.data();
     el("ui-modal").classList.remove("hidden");
-    let html = `<h3>KOMMENTARE</h3><div style="max-height:200px; overflow-y:auto; text-align:left; background:#222; padding:10px; border:2px solid #000; margin-bottom:10px;">`;
-    if (p.comments && p.comments.length > 0) {
+    
+    let commHtml = `<h3>KOMMENTARE</h3><div class="comment-box" id="modal-comm-list">`;
+    if(p.comments && p.comments.length > 0) {
         p.comments.forEach(c => {
-            html += `<div style="border-bottom:1px solid #444; margin-bottom:5px; padding-bottom:5px;"><b style="color:var(--green)">${c.u}:</b> ${c.t}</div>`;
+            commHtml += `<div style="margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">
+                <b style="color:var(--green)">${c.u}:</b> ${c.t}
+            </div>`;
         });
-    } else { html += `<p style="font-size:1rem; opacity:0.5;">Noch leer...</p>`; }
-    html += `</div><button class="btn btn-green" style="width:100%" onclick="window.addComment('${postId}')">+ KOMMENTAR</button>`;
-    el("ui-content").innerHTML = html;
-};
-
-window.addComment = async (id) => {
-    const msg = prompt("Dein Kommentar:");
-    if(msg) {
-        await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ u: currentUser, t: msg }) });
-        window.showComments(id);
+    } else {
+        commHtml += `<p style="opacity:0.5; font-size:1rem;">Keine Kommentare vorhanden.</p>`;
     }
+    commHtml += `</div>`;
+    commHtml += `<input id="new-comm-input" placeholder="Schreibe etwas...">`;
+    commHtml += `<button class="btn btn-green" style="width:100%" onclick="window.submitComment('${postId}')">SENDEN</button>`;
+    
+    el("ui-content").innerHTML = commHtml;
 };
 
+window.submitComment = async (id) => {
+    const input = el("new-comm-input");
+    const text = input.value.trim();
+    if(!text) return;
+    await updateDoc(doc(db, "posts", id), { 
+        comments: arrayUnion({ u: currentUser, t: text }) 
+    });
+    window.showComments(id); // Liste neu laden
+};
+
+/* --- LIKE-FUNKTION --- */
 window.toggleLike = async (postId, alreadyLiked) => {
     const postRef = doc(db, "posts", postId);
     await updateDoc(postRef, {
@@ -249,8 +261,8 @@ window.openChat = (target) => {
     currentChatUnsubscribe = onSnapshot(q, snap => {
         const box = el("chat-msgs"); box.innerHTML = "";
         snap.forEach(d => {
-            const m = d.data(); const isImg = m.m.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-            box.innerHTML += `<div class="msg ${m.u === currentUser ? 'me' : 'them'}">${isImg ? `<img src="${m.m}" class="chat-img">` : m.m}</div>`;
+            const m = d.data();
+            box.innerHTML += `<div class="msg ${m.u === currentUser ? 'me' : 'them'}">${m.m}</div>`;
         });
         box.scrollTop = box.scrollHeight;
     });
@@ -267,7 +279,7 @@ window.closeUI = () => el("ui-modal").classList.add("hidden");
 window.openFriendsList = () => {
     const friends = allUsers[currentUser]?.friends || [];
     el("ui-modal").classList.remove("hidden");
-    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Suche neue Freunde!");
+    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Noch keine Freunde.");
 };
 window.showUserPage = (name) => {
     const u = allUsers[name]; el("ui-modal").classList.remove("hidden");
