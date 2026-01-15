@@ -48,8 +48,10 @@ textarea,input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0;backgro
 </head>
 <body>
 
+<!-- Hamburger -->
 <div id="hamburger" onclick="toggleSidebar()"><div></div><div></div><div></div></div>
 
+<!-- Sidebar -->
 <div id="sidebar" class="collapsed">
 <h3>CRAFTNET</h3>
 <div class="menu-item" onclick="menuSelect('home')">Home</div>
@@ -59,8 +61,10 @@ textarea,input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0;backgro
 <div id="admin-menu" class="menu-item admin hidden" onclick="menuSelect('admin')">Admin: Nutzer löschen</div>
 </div>
 
+<!-- Main -->
 <div id="main-area"></div>
 
+<!-- Login Modal -->
 <div id="auth-modal" class="modal">
     <div class="card">
         <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
@@ -83,7 +87,12 @@ let messages=JSON.parse(localStorage.getItem("cn_messages")||"{}");
 
 const el=id=>document.getElementById(id);
 const isAdmin=u=>ADMIN_USERS.includes(u);
-function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));localStorage.setItem("cn_messages",JSON.stringify(messages));}
+function save(){
+  localStorage.setItem("cn_users",JSON.stringify(users));
+  localStorage.setItem("cn_posts",JSON.stringify(posts));
+  localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));
+  localStorage.setItem("cn_messages",JSON.stringify(messages));
+}
 
 /* AUTH */
 function toggleAuthMode(){
@@ -97,17 +106,17 @@ function toggleAuthMode(){
 function showError(msg){el("auth-error").innerText=msg;el("auth-error").classList.remove("hidden");}
 
 function handleAuth(){
-    const n=el("auth-user").value.trim(),p=el("auth-pass").value,s=el("auth-skin").value.trim();
-    if(!n || p.length<4){return showError("Name & Passwort nötig!");}
+    const n=el("auth-user").value.trim(),
+          p=el("auth-pass").value,
+          s=el("auth-skin").value.trim();
+    if(!n||p.length<4) return showError("Name & Passwort nötig!");
     if(isLoginMode){
         if(users[n] && users[n].pass===p){ loginUser(n); }
         else showError("Falsche Daten!");
     } else {
         if(users[n]) return showError("Name vergeben!");
         users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"Hey 👋",friends:[]};
-        save();
-        alert("Registriert! Jetzt einloggen.");
-        toggleAuthMode();
+        save(); alert("Registriert! Jetzt einloggen."); toggleAuthMode();
     }
 }
 
