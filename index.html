@@ -35,6 +35,7 @@ header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;dis
 /* FRIENDS */
 .friend-list{background:#222;padding:8px;border:2px solid #000;margin:5px 0}
 .friend-request{display:flex;justify-content:space-between;align-items:center;padding:4px;border-bottom:1px solid #555}
+.friend-btn{margin-left:4px;padding:2px 6px;border:1px solid #000;background:#555;color:white;cursor:pointer;font-size:.7rem}
 
 /* INPUTS */
 input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
@@ -49,6 +50,8 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 .video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
 .video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
 .post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
+.chat-box{background:#222;border:2px solid #000;padding:10px;max-height:300px;overflow-y:auto;margin:10px 0}
+.chat-message{margin:3px 0}
 </style>
 </head>
 <body>
@@ -90,10 +93,11 @@ let isLoginMode=true,currentUser=null;
 let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
 let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
 let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
+let chats=JSON.parse(localStorage.getItem("cn_chats")||{});
 
 const el=id=>document.getElementById(id);
 const isAdmin=u=>ADMIN_USERS.includes(u);
-function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));}
+function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));localStorage.setItem("cn_chats",JSON.stringify(chats));}
 
 /* ===== AUTH ===== */
 function toggleAuthMode(){
@@ -155,7 +159,33 @@ function respondFriendRequest(fromUser,accept){
         users[currentUser].friends.push(fromUser);
         users[fromUser].friends.push(currentUser);
     }
-    save();renderFeed();
+    save();showProfile(currentUser);
+}
+
+/* ===== CHAT ===== */
+function openChat(friend){
+    const chatId=[currentUser,friend].sort().join("_");
+    if(!chats[chatId]) chats[chatId]=[];
+    let chatHTML=`<div class="post">
+        <h3>Chat mit ${friend}</h3>
+        <div class="chat-box">`;
+    chats[chatId].forEach(m=>{
+        chatHTML+=`<div class="chat-message"><b>${m.u}:</b> ${m.t}</div>`;
+    });
+    chatHTML+=`</div>
+        <input id="chat-input" placeholder="Nachricht schreiben">
+        <button class="btn btn-green" onclick="sendChat('${chatId}','${friend}')">Senden</button>
+        <button class="btn" onclick="showProfile('${friend}')">⬅ Zurück</button>
+    </div>`;
+    el("feed").innerHTML=chatHTML;
+}
+function sendChat(chatId,friend){
+    const msg=el("chat-input").value.trim();
+    if(!msg)return;
+    chats[chatId].push({u:currentUser,t:msg});
+    el("chat-input").value="";
+    openChat(friend);
+    save();
 }
 
 /* ===== MENU ===== */
@@ -167,7 +197,18 @@ function openMenu(){
         <button class="btn" onclick="showProfile('${currentUser}')">🧍 Mein Profil</button>
         <button class="btn" onclick="renderFeed()">⬅ Zurück zum Feed</button>
     `;
-    // Mauvi_ Admin-Optionen
+    // Freundesliste & Anfragen
+    html+=`<h4>Freunde</h4>`;
+    users[currentUser].friends.forEach(f=>{
+        html+=`${f} <button class="friend-btn" onclick="openChat('${f}')">Chat</button><br>`;
+    });
+    html+=`<h4>Freundesanfragen</h4>`;
+    const reqs=friendRequests[currentUser]||[];
+    if(reqs.length===0) html+="Keine Anfragen<br>";
+    reqs.forEach(u=>{
+        html+=`${u} <button class="friend-btn" onclick="respondFriendRequest('${u}',true)">✅</button> <button class="friend-btn" onclick="respondFriendRequest('${u}',false)">❌</button><br>`;
+    });
+    // Admin-Optionen
     if(isAdmin(currentUser)){
         html+=`<h4>Admin Optionen</h4>`;
         Object.keys(users).forEach(u=>{
@@ -187,6 +228,9 @@ function deleteUser(u){
     posts=posts.filter(p=>p.author!==u);
     if(friendRequests[u]) delete friendRequests[u];
     Object.keys(friendRequests).forEach(k=>friendRequests[k]=friendRequests[k].filter(f=>f!==u));
+    Object.keys(chats).forEach(c=>{
+        if(c.includes(u)) delete chats[c];
+    });
     save();renderFeed();
 }
 
@@ -220,8 +264,7 @@ function renderFeed(){
 function showProfile(u){
     const user=users[u];
     const count=posts.filter(p=>p.author===u).length;
-    el("feed").innerHTML=`
-    <div class="profile">
+    let html=`<div class="profile">
         <img src="${user.skin}">
         <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
         <textarea ${u!==currentUser?'disabled':''} onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
@@ -229,10 +272,13 @@ function showProfile(u){
         <div class="stats">
             <div>📄 ${count}<br>Posts</div>
             <div>🤝 ${user.friends.length}<br>Freunde</div>
-        </div>
-        ${u!==currentUser?`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`:""}
-        <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
-    </div>`;
+        </div>`;
+    if(u!==currentUser){
+        if(!users[currentUser].friends.includes(u)) html+=`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`;
+        else html+=`<button class="btn" onclick="openChat('${u}')">Chat öffnen</button>`;
+    }
+    html+=`<button class="btn" onclick="renderFeed()">⬅ Zurück</button></div>`;
+    el("feed").innerHTML=html;
 }
 </script>
 </body>
