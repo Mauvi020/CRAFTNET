@@ -7,167 +7,228 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;}
-body{margin:0;font-family:'VT323',monospace;background:var(--bg);color:white;display:flex;height:100vh;overflow:hidden;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
 .hidden{display:none!important;}
-header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:99;}
-header .right {display:flex;align-items:center;gap:10px;}
-header .avatar{width:40px;height:40px;border:2px solid #000;background:#222;object-fit:cover;}
-header .btn{padding:4px 8px;cursor:pointer;border:2px solid #000;background:#5da03b;color:white;font-family:'Press Start 2P';font-size:0.7rem;}
-/* SIDEBAR */
-#sidebar{width:200px;background:#222;border-right:4px solid #000;display:flex;flex-direction:column;z-index:10;padding:10px;transition:transform .3s;}
-#sidebar.collapsed{transform:translateX(-210px);}
-#sidebar h3{margin:10px 0;text-align:center;}
-.menu-item{padding:8px;margin:4px 0;background:#333;border:2px solid #000;cursor:pointer;text-align:center;}
-.menu-item:hover{background:#444;}
-.menu-item.admin{background:#b04bff;color:white;}
-/* MAIN AREA */
-#main-area{flex:1;overflow-y:auto;padding:10px;background:var(--panel);transition:margin-left .3s;}
-#main-area.shifted{margin-left:200px;}
-.post{background:#444;border:3px solid #000;margin-bottom:15px;}
-.post-header{background:#555;padding:10px;display:flex;align-items:center;gap:10px;}
-.post-body{padding:10px;font-size:1.4rem;}
-.post-footer{background:#222;padding:8px;display:flex;gap:15px;font-size:1rem;}
-.username{cursor:pointer;color:var(--green);}
-.admin-badge{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.6rem;}
-.comment-box{background:#222;border-top:1px solid #444;padding:5px;}
-.comment{font-size:1.1rem;margin:3px 0;}
-.comment b{color:var(--green);}
-textarea,input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
-.btn{padding:8px;margin-top:4px;width:100%;cursor:pointer;background:#aaa;border:2px solid #000;font-family:'Press Start 2P';font-size:.6rem;}
-.btn-green{background:var(--green);color:white;}
-.profile img{width:80px;border:3px solid #000;margin-bottom:10px;}
-.friend-request{display:flex;justify-content:space-between;margin:4px 0;padding:2px;border-bottom:1px solid #555;}
-.friend-request button{cursor:pointer;background:#b00;color:white;border:none;padding:2px 4px;font-size:.7rem;}
-.friend-chat{background:#222;border:2px solid #000;padding:5px;margin-bottom:5px;max-height:150px;overflow-y:auto;}
-.friend-msg{margin:2px 0;}
-.friend-msg b{color:var(--green);}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';}
+.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;}
+.container{max-width:700px;margin:20px auto;padding:0 10px}
+
+/* POSTS */
+.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
+.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
+.post-body{padding:15px;font-size:1.5rem}
+.post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
+.username{cursor:pointer;color:var(--green)}
+.admin-badge{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.6rem}
+
+/* COMMENTS */
+.comment-box{background:#222;border-top:1px solid #444;padding:8px}
+.comment{font-size:1.1rem;margin:4px 0}
+.comment b{color:var(--green)}
+
+/* PROFILE */
+.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
+.profile img{width:96px;border:3px solid #000}
+.stats{display:flex;justify-content:space-around;margin:10px 0}
+
+/* FRIENDS */
+.friend-list{background:#222;padding:8px;border:2px solid #000;margin:5px 0}
+.friend-request{display:flex;justify-content:space-between;align-items:center;padding:4px;border-bottom:1px solid #555}
+
+/* INPUTS */
+input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
+.btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
+.btn-green{background:var(--green);color:white}
+
 /* LOGIN */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
 .card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
 .error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
-/* HAMBURGER BUTTON */
-#hamburger{position:absolute;top:10px;left:10px;width:30px;height:30px;cursor:pointer;z-index:20;display:none;}
-#hamburger div{height:4px;background:#3f3;margin:5px 0;}
+
+.video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
+.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
+.post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
 </style>
 </head>
 <body>
 
-<header>
-  <div style="font-family:'Press Start 2P';font-size:1rem;color:#3f3;text-shadow:2px 2px #000;">CRAFTNET</div>
-  <div class="right" id="nav-info" class="hidden">
-    <span id="nav-name"></span>
-    <button class="btn" onclick="openPostBox()" title="Neuen Post erstellen">+</button>
-    <button class="btn" onclick="menuSelect('friends')" title="Freunde-Menü">👥</button>
-    <img id="nav-avatar" class="avatar">
-  </div>
-</header>
-
-<div id="hamburger" onclick="toggleSidebar()"><div></div><div></div><div></div></div>
-
-<div id="sidebar" class="collapsed">
-<h3>CRAFTNET</h3>
-<div class="menu-item" onclick="menuSelect('home')">Home</div>
-<div class="menu-item" onclick="menuSelect('requests')">Freundesanfragen</div>
-<div class="menu-item" onclick="menuSelect('chat')">Freunde / Chat</div>
-<div class="menu-item" onclick="menuSelect('profile')">Profil</div>
-<div id="admin-menu" class="menu-item admin hidden" onclick="menuSelect('admin')">Admin: Nutzer löschen</div>
+<!-- LOGIN -->
+<div id="auth-modal" class="modal">
+    <div class="card">
+        <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
+        <div id="auth-error" class="error hidden"></div>
+        <input id="auth-user" placeholder="Name">
+        <input id="auth-pass" type="password" placeholder="Passwort (min.4)">
+        <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
+        <button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
+        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()">Noch kein Account? Registrieren</p>
+    </div>
 </div>
 
-<div id="main-area"></div>
+<header>
+    <div class="header-title" onclick="openAdminMenu()">CRAFTNET</div>
+    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+        <span id="nav-name"></span>
+        <img id="nav-avatar" class="avatar">
+    </div>
+</header>
 
-<div id="auth-modal" class="modal">
-  <div class="card">
-    <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
-    <div id="auth-error" class="error hidden"></div>
-    <input id="auth-user" placeholder="Name">
-    <input id="auth-pass" type="password" placeholder="Passwort (min.4)">
-    <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
-    <button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
-    <p id="toggle-auth" style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()">Noch kein Account? Registrieren</p>
-  </div>
+<div id="main" class="container hidden">
+    <div class="post" style="padding:15px;background:#444">
+        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+        <input id="post-video" placeholder="YouTube Link (optional)">
+        <input id="post-img" placeholder="Bild URL (optional)">
+        <button class="btn btn-green" onclick="createPost()">POSTEN</button>
+    </div>
+    <div id="feed"></div>
 </div>
 
 <script>
 const ADMIN_USERS=["Mauvi_"];
 let isLoginMode=true,currentUser=null;
 let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
-let posts=JSON.parse(localStorage.getItem("cn_posts")||"[]");
+let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
 let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
-let messages=JSON.parse(localStorage.getItem("cn_messages")||"{}");
 
 const el=id=>document.getElementById(id);
 const isAdmin=u=>ADMIN_USERS.includes(u);
-function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));localStorage.setItem("cn_messages",JSON.stringify(messages));}
+function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));}
 
-/* AUTH */
+/* ===== AUTH ===== */
 function toggleAuthMode(){
     isLoginMode=!isLoginMode;
     el("auth-title").innerText=isLoginMode?"LOGIN":"REGISTRIEREN";
     el("auth-skin").classList.toggle("hidden",isLoginMode);
     el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
-    el("auth-error").classList.add("hidden");
 }
 function showError(msg){el("auth-error").innerText=msg;el("auth-error").classList.remove("hidden");}
 function handleAuth(){
-    const n=el("auth-user").value.trim(),p=el("auth-pass").value,s=el("auth-skin").value.trim();
+    const n=el("auth-user").value.trim();
+    const p=el("auth-pass").value;
+    const s=el("auth-skin").value.trim();
     if(!n||p.length<4)return showError("Name & Passwort nötig!");
     if(isLoginMode){
-        if(users[n] && users[n].pass===p) loginUser(n);
-        else showError("Falsche Daten!");
-    } else {
+        if(users[n]&&users[n].pass===p)loginUser(n);else showError("Falsche Daten!");
+    }else{
         if(users[n]) return showError("Name vergeben!");
         users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"Hey 👋",friends:[]};
-        save(); alert("Registriert! Jetzt einloggen."); toggleAuthMode();
+        save();alert("Registriert! Jetzt einloggen.");toggleAuthMode();
     }
 }
 function loginUser(n){
     currentUser=n;
     el("auth-modal").classList.add("hidden");
-    el("hamburger").style.display="block";
+    el("main").classList.remove("hidden");
     el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText=currentUser;
-    el("nav-avatar").src=users[currentUser].skin;
-    if(isAdmin(n)) el("admin-menu").classList.remove("hidden");
-    showHome();
+    el("nav-name").innerText=n+(isAdmin(n)?" [ADMIN]":"");
+    el("nav-avatar").src=users[n].skin;
+    renderFeed();
 }
 
-/* SIDEBAR */
-function toggleSidebar(){el("sidebar").classList.toggle("collapsed");el("main-area").classList.toggle("shifted");}
-function menuSelect(panel){
-    if(panel==='home') showHome();
-    else if(panel==='requests') showFriendRequests();
-    else if(panel==='chat') showFriendChat();
-    else if(panel==='profile') showProfilePanel();
-    else if(panel==='admin') showAdminPanel();
-    toggleSidebar();
+/* ===== POSTS ===== */
+function createPost(){
+    const text=el("post-text").value.trim();
+    if(!text)return;
+    const video=extractYT(el("post-video").value);
+    const img=el("post-img").value.trim()||"";
+    posts.unshift({id:Date.now(),author:currentUser,text,video,img,likes:[],comments:[]});
+    el("post-text").value="";el("post-video").value="";el("post-img").value="";
+    save();renderFeed();
+}
+function extractYT(url){const m=url.match(/(?:v=|\.be\/)([^&]+)/);return m?m[1]:null;}
+function addComment(id){const msg=prompt("Kommentar schreiben:");if(!msg)return;const post=posts.find(p=>p.id===id);post.comments.push({u:currentUser,t:msg});save();renderFeed();}
+function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();renderFeed();}
+function deletePost(id){posts=posts.filter(p=>p.id!==id);save();renderFeed();}
+
+/* ===== FRIEND SYSTEM ===== */
+function sendFriendRequest(toUser){
+    if(!friendRequests[toUser])friendRequests[toUser]=[];
+    if(friendRequests[toUser].includes(currentUser))return alert("Anfrage schon gesendet!");
+    friendRequests[toUser].push(currentUser);
+    save();
+    alert("Freundesanfrage gesendet!");
+}
+function respondFriendRequest(fromUser,accept){
+    friendRequests[currentUser]=friendRequests[currentUser].filter(u=>u!==fromUser);
+    if(accept){
+        users[currentUser].friends.push(fromUser);
+        users[fromUser].friends.push(currentUser);
+    }
+    save();renderAdminMenu();
 }
 
-/* POSTS */
-function showHome(){
-    el("main-area").innerHTML="";
+/* ===== ADMIN MENU ===== */
+function openAdminMenu(){
+    if(!isAdmin(currentUser))return;
+    let html=`<div class="post" style="text-align:left;padding:10px">
+        <h3>Admin Menü</h3>
+        <h4>Accounts</h4>`;
+    Object.keys(users).forEach(u=>{
+        html+=`${u} ${isAdmin(u)?"[ADMIN]":""} ${u!==currentUser?`<button class="btn" onclick="deleteUser('${u}')">Löschen</button>`:""}<br>`;
+    });
+    html+=`<h4>Freundesanfragen</h4>`;
+    const reqs=friendRequests[currentUser]||[];
+    if(reqs.length===0) html+="Keine Anfragen<br>";
+    reqs.forEach(u=>{
+        html+=`<div class="friend-request">${u} <button class="btn" onclick="respondFriendRequest('${u}',true)">✅</button> <button class="btn" onclick="respondFriendRequest('${u}',false)">❌</button></div>`;
+    });
+    html+=`<button class="btn" onclick="renderFeed()">⬅ Zurück</button></div>`;
+    el("feed").innerHTML=html;
+}
+function deleteUser(u){
+    if(!isAdmin(currentUser)||!users[u]||ADMIN_USERS.includes(u))return alert("Nicht erlaubt!");
+    delete users[u];
+    posts=posts.filter(p=>p.author!==u);
+    if(friendRequests[u]) delete friendRequests[u];
+    Object.keys(friendRequests).forEach(k=>friendRequests[k]=friendRequests[k].filter(f=>f!==u));
+    save();renderFeed();
+}
+
+/* ===== RENDER FEED ===== */
+function renderFeed(){
+    el("feed").innerHTML="";
     posts.forEach(p=>{
-        el("main-area").innerHTML+=`<div class="post">
-        <div class="post-header"><img class="avatar" src="${users[p.author].skin}"><b class="username">${p.author}</b>${isAdmin(p.author)?' <span class="admin-badge">ADMIN</span>':''}</div>
-        <div class="post-body">${p.text}</div>
-        ${p.video?`<iframe style="width:100%;height:200px;" src="https://www.youtube.com/embed/${p.video}" frameborder="0" allowfullscreen></iframe>`:""}
-        ${p.img?`<img src="${p.img}" style="width:100%;max-height:200px;object-fit:contain">`:""}
-        <div class="post-footer"><span onclick="likePost(${p.id})" style="cursor:pointer">⛏️${p.likes?.length||0}</span> <span onclick="addComment(${p.id})" style="cursor:pointer">💬${p.comments?.length||0}</span></div>
+        el("feed").innerHTML+=`
+        <div class="post">
+            <div class="post-header">
+                <img class="avatar" src="${users[p.author].skin}">
+                <b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
+                ${isAdmin(p.author)?'<span class="admin-badge">ADMIN</span>':''}
+            </div>
+            <div class="post-body">${p.text}</div>
+            ${p.video?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" frameborder="0" allowfullscreen></iframe></div>`:""}
+            ${p.img?`<img class="post-img" src="${p.img}">`:""}
+            <div class="post-footer">
+                <span onclick="likePost(${p.id})" style="cursor:pointer">⛏️ ${p.likes.length}</span>
+                <span onclick="addComment(${p.id})" style="cursor:pointer">💬 ${p.comments.length}</span>
+                ${isAdmin(currentUser)?`<span onclick="deletePost(${p.id})" style="cursor:pointer">🗑</span>`:""}
+            </div>
+            <div class="comment-box ${p.comments.length===0?'hidden':''}">
+                ${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}
+            </div>
         </div>`;
     });
 }
 
-function openPostBox(){
-    const text=prompt("Post Text:");
-    if(!text) return;
-    const img=prompt("Bild URL (optional):")||"";
-    const video=prompt("YouTube URL (optional):")||"";
-    const vid=video.match(/(?:v=|\.be\/)([^&]+)/);
-    posts.unshift({id:Date.now(),author:currentUser,text,img,video:vid?vid[1]:null,likes:[],comments:[]});
-    save(); showHome();
+/* ===== PROFILE ===== */
+function showProfile(u){
+    const user=users[u];
+    const count=posts.filter(p=>p.author===u).length;
+    el("feed").innerHTML=`
+    <div class="profile">
+        <img src="${user.skin}">
+        <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
+        <textarea ${u!==currentUser?'disabled':''} onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
+        <input ${u!==currentUser?'disabled':''} value="${user.status}" onchange="users['${u}'].status=this.value;save()">
+        <div class="stats">
+            <div>📄 ${count}<br>Posts</div>
+            <div>🤝 ${user.friends.length}<br>Freunde</div>
+        </div>
+        ${u!==currentUser?`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`:""}
+        <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
+    </div>`;
 }
-
-function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();showHome();}
-function addComment(id){const c=prompt("Kommentar:");if(!c)return;posts.find(p=>p.id===id).comments.push({u:currentUser,t:c});save();showHome();}
 </script>
 </body>
 </html>
