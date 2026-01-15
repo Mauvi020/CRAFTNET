@@ -5,9 +5,8 @@
 <title>CraftNet Ultimate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-
 <style>
-:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;}
 body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
 .hidden{display:none!important;}
 header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
@@ -15,131 +14,226 @@ header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;dis
 .avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;}
 .container{max-width:700px;margin:20px auto;padding:0 10px}
 
+/* POSTS */
 .post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
 .post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
 .post-body{padding:15px;font-size:1.5rem}
 .post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
 .username{cursor:pointer;color:var(--green)}
+.admin-badge{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.6rem}
 
-input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
+/* COMMENTS */
+.comment-box{background:#222;border-top:1px solid #444;padding:8px}
+.comment{font-size:1.1rem;margin:4px 0}
+.comment b{color:var(--green)}
+
+/* PROFILE */
+.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
+.profile img{width:96px;border:3px solid #000}
+.stats{display:flex;justify-content:space-around;margin:10px 0}
+
+/* FRIENDS */
+.friend-list{background:#222;padding:8px;border:2px solid #000;margin:5px 0}
+.friend-request{display:flex;justify-content:space-between;align-items:center;padding:4px;border-bottom:1px solid #555}
+
+/* INPUTS */
+input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
 .btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
 .btn-green{background:var(--green);color:white}
 
+/* LOGIN */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
 .card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
 .error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
+
+.video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
+.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
+.post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="auth-modal" class="modal">
-  <div class="card">
-    <h2 style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
-    <div id="auth-error" class="error hidden"></div>
-    <input id="auth-user" placeholder="Name">
-    <input id="auth-pass" type="password" placeholder="Passwort (min.4)">
-    <button id="loginBtn" class="btn btn-green">WELT BETRETEN</button>
-  </div>
+    <div class="card">
+        <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
+        <div id="auth-error" class="error hidden"></div>
+        <input id="auth-user" placeholder="Name">
+        <input id="auth-pass" type="password" placeholder="Passwort (min.4)">
+        <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
+        <button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
+        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()">Noch kein Account? Registrieren</p>
+    </div>
 </div>
 
 <header>
-  <div class="header-title">CRAFTNET</div>
-  <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
-    <span id="nav-name"></span>
-    <img id="nav-avatar" class="avatar">
-  </div>
+    <div class="header-title" onclick="openMenu()">CRAFTNET</div>
+    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+        <span id="nav-name"></span>
+        <img id="nav-avatar" class="avatar">
+    </div>
 </header>
 
 <div id="main" class="container hidden">
-  <div class="post" style="padding:15px;background:#444">
-    <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
-    <button id="postBtn" class="btn btn-green">POSTEN</button>
-  </div>
-  <div id="feed"></div>
+    <div class="post" style="padding:15px;background:#444">
+        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+        <input id="post-video" placeholder="YouTube Link (optional)">
+        <input id="post-img" placeholder="Bild URL (optional)">
+        <button class="btn btn-green" onclick="createPost()">POSTEN</button>
+    </div>
+    <div id="feed"></div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+const ADMIN_USERS=["Mauvi_"];
+let isLoginMode=true,currentUser=null;
+let users=JSON.parse(localStorage.getItem("cn_users")||"{}");
+let posts=JSON.parse(localStorage.getItem("cn_posts")||[]);
+let friendRequests=JSON.parse(localStorage.getItem("cn_friendRequests")||"{}");
 
-  let users = JSON.parse(localStorage.getItem("cn_users") || "{}");
-  let posts = JSON.parse(localStorage.getItem("cn_posts") || "[]");
-  let currentUser = null;
+const el=id=>document.getElementById(id);
+const isAdmin=u=>ADMIN_USERS.includes(u);
+function save(){localStorage.setItem("cn_users",JSON.stringify(users));localStorage.setItem("cn_posts",JSON.stringify(posts));localStorage.setItem("cn_friendRequests",JSON.stringify(friendRequests));}
 
-  const el = id => document.getElementById(id);
-  const save = () => {
-    localStorage.setItem("cn_users", JSON.stringify(users));
-    localStorage.setItem("cn_posts", JSON.stringify(posts));
-  };
-
-  function showError(msg){
-    el("auth-error").innerText = msg;
-    el("auth-error").classList.remove("hidden");
-  }
-
-  /* LOGIN – FIX */
-  el("loginBtn").addEventListener("click", () => {
-    const name = el("auth-user").value.trim();
-    const pass = el("auth-pass").value;
-
-    el("auth-error").classList.add("hidden");
-
-    if(!name || pass.length < 4){
-      showError("Name & Passwort nötig!");
-      return;
+/* ===== AUTH ===== */
+function toggleAuthMode(){
+    isLoginMode=!isLoginMode;
+    el("auth-title").innerText=isLoginMode?"LOGIN":"REGISTRIEREN";
+    el("auth-skin").classList.toggle("hidden",isLoginMode);
+    el("toggle-auth").innerText=isLoginMode?"Noch kein Account? Registrieren":"Bereits ein Account? Login";
+}
+function showError(msg){el("auth-error").innerText=msg;el("auth-error").classList.remove("hidden");}
+function handleAuth(){
+    const n=el("auth-user").value.trim();
+    const p=el("auth-pass").value;
+    const s=el("auth-skin").value.trim();
+    if(!n||p.length<4)return showError("Name & Passwort nötig!");
+    if(isLoginMode){
+        if(users[n]&&users[n].pass===p)loginUser(n);else showError("Falsche Daten!");
+    }else{
+        if(users[n]) return showError("Name vergeben!");
+        users[n]={pass:p,skin:s.includes("http")?s:`https://minotar.net/avatar/${s||n}`,bio:"",status:"Hey 👋",friends:[]};
+        save();alert("Registriert! Jetzt einloggen.");toggleAuthMode();
     }
-
-    // Auto-Registrierung
-    if(!users[name]){
-      users[name] = {
-        pass,
-        skin: `https://minotar.net/avatar/${name}`
-      };
-      save();
-    }
-
-    if(users[name].pass !== pass){
-      showError("Falsches Passwort!");
-      return;
-    }
-
-    // LOGIN OK
-    currentUser = name;
+}
+function loginUser(n){
+    currentUser=n;
     el("auth-modal").classList.add("hidden");
     el("main").classList.remove("hidden");
     el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText = name;
-    el("nav-avatar").src = users[name].skin;
-
+    el("nav-name").innerText=n+(isAdmin(n)?" [ADMIN]":"");
+    el("nav-avatar").src=users[n].skin;
     renderFeed();
-  });
+}
 
-  /* POSTS */
-  el("postBtn").addEventListener("click", () => {
-    const text = el("post-text").value.trim();
-    if(!text) return;
-    posts.unshift({author: currentUser, text});
-    el("post-text").value = "";
+/* ===== POSTS ===== */
+function createPost(){
+    const text=el("post-text").value.trim();
+    if(!text)return;
+    const video=extractYT(el("post-video").value);
+    const img=el("post-img").value.trim()||"";
+    posts.unshift({id:Date.now(),author:currentUser,text,video,img,likes:[],comments:[]});
+    el("post-text").value="";el("post-video").value="";el("post-img").value="";
+    save();renderFeed();
+}
+function extractYT(url){const m=url.match(/(?:v=|\.be\/)([^&]+)/);return m?m[1]:null;}
+function addComment(id){const msg=prompt("Kommentar schreiben:");if(!msg)return;const post=posts.find(p=>p.id===id);post.comments.push({u:currentUser,t:msg});save();renderFeed();}
+function likePost(id){const post=posts.find(p=>p.id===id);if(post.likes.includes(currentUser))return;post.likes.push(currentUser);save();renderFeed();}
+function deletePost(id){posts=posts.filter(p=>p.id!==id);save();renderFeed();}
+
+/* ===== FRIEND SYSTEM ===== */
+function sendFriendRequest(toUser){
+    if(!friendRequests[toUser])friendRequests[toUser]=[];
+    if(friendRequests[toUser].includes(currentUser))return alert("Anfrage schon gesendet!");
+    friendRequests[toUser].push(currentUser);
     save();
-    renderFeed();
-  });
+    alert("Freundesanfrage gesendet!");
+}
+function respondFriendRequest(fromUser,accept){
+    friendRequests[currentUser]=friendRequests[currentUser].filter(u=>u!==fromUser);
+    if(accept){
+        users[currentUser].friends.push(fromUser);
+        users[fromUser].friends.push(currentUser);
+    }
+    save();renderFeed();
+}
 
-  function renderFeed(){
-    el("feed").innerHTML = "";
+/* ===== MENU ===== */
+function openMenu(){
+    if(!currentUser) return;
+    let html=`<div class="post" style="text-align:left;padding:10px">
+        <h3>Menü</h3>
+        <p>Angemeldet als: <b>${currentUser}</b> ${isAdmin(currentUser)?"[ADMIN]":""}</p>
+        <button class="btn" onclick="showProfile('${currentUser}')">🧍 Mein Profil</button>
+        <button class="btn" onclick="renderFeed()">⬅ Zurück zum Feed</button>
+    `;
+    // Mauvi_ Admin-Optionen
+    if(isAdmin(currentUser)){
+        html+=`<h4>Admin Optionen</h4>`;
+        Object.keys(users).forEach(u=>{
+            if(u!==currentUser){
+                html+=`${u} <button class="btn" onclick="deleteUser('${u}')">Löschen</button><br>`;
+            }else{
+                html+=`${u} [ADMIN]<br>`;
+            }
+        });
+    }
+    html+="</div>";
+    el("feed").innerHTML=html;
+}
+function deleteUser(u){
+    if(!isAdmin(currentUser)||!users[u]||ADMIN_USERS.includes(u))return alert("Nicht erlaubt!");
+    delete users[u];
+    posts=posts.filter(p=>p.author!==u);
+    if(friendRequests[u]) delete friendRequests[u];
+    Object.keys(friendRequests).forEach(k=>friendRequests[k]=friendRequests[k].filter(f=>f!==u));
+    save();renderFeed();
+}
+
+/* ===== RENDER FEED ===== */
+function renderFeed(){
+    el("feed").innerHTML="";
     posts.forEach(p=>{
-      el("feed").innerHTML += `
+        el("feed").innerHTML+=`
         <div class="post">
-          <div class="post-header">
-            <img class="avatar" src="${users[p.author].skin}">
-            <b class="username">${p.author}</b>
-          </div>
-          <div class="post-body">${p.text}</div>
+            <div class="post-header">
+                <img class="avatar" src="${users[p.author].skin}">
+                <b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
+                ${isAdmin(p.author)?'<span class="admin-badge">ADMIN</span>':''}
+            </div>
+            <div class="post-body">${p.text}</div>
+            ${p.video?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" frameborder="0" allowfullscreen></iframe></div>`:""}
+            ${p.img?`<img class="post-img" src="${p.img}">`:""}
+            <div class="post-footer">
+                <span onclick="likePost(${p.id})" style="cursor:pointer">⛏️ ${p.likes.length}</span>
+                <span onclick="addComment(${p.id})" style="cursor:pointer">💬 ${p.comments.length}</span>
+                ${isAdmin(currentUser)?`<span onclick="deletePost(${p.id})" style="cursor:pointer">🗑</span>`:""}
+            </div>
+            <div class="comment-box ${p.comments.length===0?'hidden':''}">
+                ${p.comments.map(c=>`<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}
+            </div>
         </div>`;
     });
-  }
+}
 
-});
+/* ===== PROFILE ===== */
+function showProfile(u){
+    const user=users[u];
+    const count=posts.filter(p=>p.author===u).length;
+    el("feed").innerHTML=`
+    <div class="profile">
+        <img src="${user.skin}">
+        <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
+        <textarea ${u!==currentUser?'disabled':''} onchange="users['${u}'].bio=this.value;save()">${user.bio}</textarea>
+        <input ${u!==currentUser?'disabled':''} value="${user.status}" onchange="users['${u}'].status=this.value;save()">
+        <div class="stats">
+            <div>📄 ${count}<br>Posts</div>
+            <div>🤝 ${user.friends.length}<br>Freunde</div>
+        </div>
+        ${u!==currentUser?`<button class="btn" onclick="sendFriendRequest('${u}')">Freund hinzufügen</button>`:""}
+        <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
+    </div>`;
+}
 </script>
-
 </body>
 </html>
