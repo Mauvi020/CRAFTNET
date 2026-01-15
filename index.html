@@ -1,173 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CraftNet</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --mc-green:#5da03b;
+    --mc-dirt:#866043;
+    --mc-bg:#1e1e1e;
+    --mc-panel:#333;
+}
+body {
+    margin:0;
+    font-family:'VT323', monospace;
+    background:var(--mc-bg);
+    color:white;
+    font-size:1.3rem;
+}
+.hidden{display:none!important}
+
+/* HEADER */
+header{
+    background:var(--mc-dirt);
+    border-bottom:4px solid #000;
+    padding:10px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.avatar{
+    width:48px;
+    height:48px;
+    border:2px solid #000;
+    image-rendering:pixelated;
+}
+
+/* MODAL */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.95);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+}
+.card{
+    background:#8b8b8b;
+    border:4px solid #000;
+    padding:20px;
+    width:360px;
+    text-align:center;
+}
+input,textarea{
+    width:100%;
+    box-sizing:border-box;
+    padding:10px;
+    margin:8px 0;
+    background:#000;
+    color:#3f3;
+    border:2px solid #555;
+    font-family:'VT323';
+}
+.btn{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    cursor:pointer;
+    border:2px solid #000;
+    background:#bcbcbc;
+    font-family:'Press Start 2P';
+    font-size:.6rem;
+}
+.btn-green{
+    background:var(--mc-green);
+    color:white;
+}
+.error{
+    background:#ffaaaa;
+    color:#900;
+    border:2px solid #000;
+    padding:5px;
+    margin-bottom:5px;
+}
+
+/* CONTENT */
+.container{max-width:650px;margin:20px auto;padding:0 10px;}
+.post{
+    background:var(--mc-panel);
+    border:3px solid #000;
+    margin-bottom:25px;
+}
+.post-header{
+    background:#444;
+    padding:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.post-body{padding:15px;font-size:1.6rem}
+.post-footer{
+    background:#222;
+    padding:10px;
+    display:flex;
+    gap:20px;
+    font-size:1rem;
+}
+.comment-box{
+    background:#252525;
+    padding:10px;
+}
+.comment{border-bottom:1px solid #333;padding:5px 0}
+
+.video-wrapper{position:relative;padding-bottom:56.25%;height:0}
+.video-wrapper iframe{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+}
+.username{cursor:pointer;color:var(--mc-green)}
+</style>
+</head>
+
+<body>
+
+<!-- AUTH -->
+<div id="auth-modal" class="modal">
+    <div class="card">
+        <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
+        <div id="auth-error" class="error hidden"></div>
+        <input id="auth-user" placeholder="Name">
+        <input id="auth-pass" type="password" placeholder="Passwort">
+        <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
+        <button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
+        <p style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()" id="toggle-auth">
+            Noch kein Account? Registrieren
+        </p>
+    </div>
+</div>
+
+<header>
+    <div style="font-family:'Press Start 2P';color:#3f3">CRAFTNET</div>
+    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+        <span id="nav-name"></span>
+        <img id="nav-avatar" class="avatar">
+    </div>
+</header>
+
+<div id="main-content" class="container hidden">
+    <div class="post" style="padding:15px;background:#444">
+        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+        <input id="post-video" placeholder="YouTube Link (optional)">
+        <button class="btn btn-green" onclick="createPost()">POSTEN</button>
+    </div>
+    <div id="feed"></div>
+</div>
+
 <script>
-let isLoginMode = true;
-let currentUser = null;
+let isLoginMode=true;
+let currentUser=null;
 
-let accounts = JSON.parse(localStorage.getItem('cn_final_accounts')) || {};
-let posts = JSON.parse(localStorage.getItem('cn_final_posts')) || [];
+let accounts=JSON.parse(localStorage.getItem('cn_accounts'))||{};
+let posts=JSON.parse(localStorage.getItem('cn_posts'))||[];
 
-/* ================= AUTH ================= */
+/* FIX alte Daten */
+posts.forEach(p=>{
+    if(!Array.isArray(p.likes))p.likes=[];
+    if(!Array.isArray(p.comments))p.comments=[];
+});
 
-function toggleAuthMode() {
-    isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? "LOGIN" : "REGISTRIEREN";
-    document.getElementById('auth-skin').classList.toggle('hidden', isLoginMode);
-    document.getElementById('toggle-auth').innerText =
-        isLoginMode ? "Noch kein Account? Registrieren" : "Bereits ein Account? Login";
+function toggleAuthMode(){
+    isLoginMode=!isLoginMode;
+    auth-title.innerText=isLoginMode?"LOGIN":"REGISTRIEREN";
+    auth-skin.classList.toggle("hidden",isLoginMode);
+    toggle-auth.innerText=isLoginMode?
+        "Noch kein Account? Registrieren":
+        "Bereits ein Account? Login";
 }
 
-function showError(msg) {
-    const err = document.getElementById('auth-error');
-    err.innerText = msg;
-    err.classList.remove('hidden');
+function showError(m){
+    auth-error.innerText=m;
+    auth-error.classList.remove("hidden");
 }
 
-function handleAuth() {
-    const name = document.getElementById('auth-user').value.trim();
-    const pass = document.getElementById('auth-pass').value;
-    const skinVal = document.getElementById('auth-skin').value.trim();
+function handleAuth(){
+    let n=auth-user.value.trim();
+    let p=auth-pass.value;
+    let s=auth-skin.value.trim();
+    if(!n||p.length<4)return showError("Name & Passwort!");
 
-    if (!name || pass.length < 4) return showError("Name & PW nötig!");
-
-    if (isLoginMode) {
-        if (accounts[name] && accounts[name].pass === pass) login(name);
+    if(isLoginMode){
+        if(accounts[n]&&accounts[n].pass===p)login(n);
         else showError("Falsche Daten!");
-    } else {
-        if (accounts[name]) return showError("Name belegt!");
-
-        let pfp = skinVal.includes('http')
-            ? skinVal
-            : `https://minotar.net/avatar/${skinVal || name}.png`;
-
-        accounts[name] = { pass, skin: pfp };
-        localStorage.setItem('cn_final_accounts', JSON.stringify(accounts));
-        alert("Erfolgreich! Jetzt einloggen.");
+    }else{
+        if(accounts[n])return showError("Name belegt!");
+        let img=s.includes("http")?s:`https://minotar.net/avatar/${s||n}.png`;
+        accounts[n]={pass:p,skin:img};
+        localStorage.setItem("cn_accounts",JSON.stringify(accounts));
+        alert("Registriert!");
         toggleAuthMode();
     }
 }
 
-function login(name) {
-    currentUser = { name, ...accounts[name] };
-    document.getElementById('auth-modal').classList.add('hidden');
-    document.getElementById('main-content').classList.remove('hidden');
-    document.getElementById('nav-info').classList.remove('hidden');
-    document.getElementById('nav-name').innerText = name;
-    document.getElementById('nav-avatar').src = currentUser.skin;
+function login(n){
+    currentUser={name:n,...accounts[n]};
+    auth-modal.classList.add("hidden");
+    main-content.classList.remove("hidden");
+    nav-info.classList.remove("hidden");
+    nav-name.innerText=n;
+    nav-avatar.src=currentUser.skin;
     renderFeed();
 }
 
-/* ================= POSTS ================= */
-
-function extractYT(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]{11}).*/;
-    const match = url.match(regExp);
-    return match ? match[2] : null;
+function extractYT(u){
+    let m=u.match(/(?:v=|\.be\/)([^&]+)/);
+    return m?m[1]:null;
 }
 
-function createPost() {
-    const text = document.getElementById('post-text').value;
-    const video = document.getElementById('post-video').value;
-    if (!text.trim()) return;
-
+function createPost(){
+    let t=post-text.value.trim();
+    if(!t)return;
     posts.unshift({
-        id: Date.now(),
-        author: currentUser.name,
-        pfp: currentUser.skin,
-        text,
-        video: extractYT(video),
-        likes: [],
-        comments: []
+        id:Date.now(),
+        author:currentUser.name,
+        pfp:currentUser.skin,
+        text:t,
+        video:extractYT(post-video.value),
+        likes:[],
+        comments:[]
     });
-
     save();
-    document.getElementById('post-text').value = "";
-    document.getElementById('post-video').value = "";
+    post-text.value="";
+    post-video.value="";
     renderFeed();
 }
 
-/* ================= LIKES ================= */
-
-function likePost(id) {
-    const post = posts.find(p => p.id === id);
-    if (!post || post.likes.includes(currentUser.name)) return;
-
-    post.likes.push(currentUser.name);
-    save();
-    renderFeed();
+function likePost(id){
+    let p=posts.find(x=>x.id===id);
+    if(p.likes.includes(currentUser.name))return;
+    p.likes.push(currentUser.name);
+    save();renderFeed();
 }
 
-/* ================= COMMENTS ================= */
-
-function addComment(id) {
-    const msg = prompt("Dein Kommentar:");
-    if (!msg) return;
-
-    const post = posts.find(p => p.id === id);
-    post.comments.push({ user: currentUser.name, text: msg });
-    save();
-    renderFeed();
+function addComment(id){
+    let m=prompt("Kommentar:");
+    if(!m)return;
+    posts.find(p=>p.id===id).comments.push({user:currentUser.name,text:m});
+    save();renderFeed();
 }
 
-/* ================= RENDER ================= */
-
-function save() {
-    localStorage.setItem('cn_final_posts', JSON.stringify(posts));
+function save(){
+    localStorage.setItem("cn_posts",JSON.stringify(posts));
 }
 
-function renderFeed() {
-    const feed = document.getElementById('feed');
-    feed.innerHTML = '';
-    posts.forEach(p => renderSinglePost(p));
+function renderFeed(){
+    feed.innerHTML="";
+    posts.forEach(p=>renderPost(p));
 }
 
-function renderSinglePost(p) {
-    const feed = document.getElementById('feed');
-    const liked = p.likes.includes(currentUser.name);
-
-    let videoHtml = p.video
-        ? `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" frameborder="0" allowfullscreen></iframe></div>`
-        : '';
-
-    let commentsHtml = p.comments
-        .map(c => `<div class="comment"><b>${c.user}:</b> ${c.text}</div>`)
-        .join('');
-
-    feed.innerHTML += `
-        <div class="post">
-            <div class="post-header">
-                <img class="avatar" src="${p.pfp}">
-                <b style="cursor:pointer;color:#5da03b"
-                   onclick="showUserPosts('${p.author}')">${p.author}</b>
-            </div>
-            <div class="post-body">${p.text}</div>
-            ${videoHtml}
-            <div class="post-footer">
-                <span onclick="likePost(${p.id})" style="cursor:pointer;${liked ? 'color:#3f3' : ''}">
-                    ⛏️ ${p.likes.length}
-                </span>
-                <span onclick="addComment(${p.id})" style="cursor:pointer">
-                    💬 ${p.comments.length}
-                </span>
-            </div>
-            <div class="comment-box ${p.comments.length === 0 ? 'hidden' : ''}">
-                ${commentsHtml}
-            </div>
+function renderPost(p){
+    feed.innerHTML+=`
+    <div class="post">
+        <div class="post-header">
+            <img class="avatar" src="${p.pfp}">
+            <b class="username" onclick="showUserPosts('${p.author}')">${p.author}</b>
         </div>
-    `;
+        <div class="post-body">${p.text}</div>
+        ${p.video?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}"></iframe></div>`:""}
+        <div class="post-footer">
+            <span onclick="likePost(${p.id})">⛏️ ${p.likes.length}</span>
+            <span onclick="addComment(${p.id})">💬 ${p.comments.length}</span>
+        </div>
+        ${p.comments.length?`<div class="comment-box">${p.comments.map(c=>`<div class="comment"><b>${c.user}:</b> ${c.text}</div>`).join("")}</div>`:""}
+    </div>`;
 }
 
-/* ================= PROFILE VIEW ================= */
-
-function showUserPosts(username) {
-    const feed = document.getElementById('feed');
-    feed.innerHTML = `
-        <div class="post" style="text-align:center">
-            <b>Beiträge von ${username}</b><br><br>
-            <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
-        </div>
-    `;
-
-    posts
-        .filter(p => p.author === username)
-        .forEach(p => renderSinglePost(p));
+function showUserPosts(u){
+    feed.innerHTML=`
+    <div class="post" style="text-align:center">
+        <b>Beiträge von ${u}</b><br><br>
+        <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
+    </div>`;
+    posts.filter(p=>p.author===u).forEach(p=>renderPost(p));
 }
 </script>
+
+</body>
+</html>
