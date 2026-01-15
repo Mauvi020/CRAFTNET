@@ -2,292 +2,162 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CraftNet</title>
-
+<title>CraftNet Ultimate</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
 <style>
 :root{
-    --mc-green:#5da03b;
-    --mc-dirt:#866043;
-    --mc-bg:#1e1e1e;
-    --mc-panel:#333;
-    --admin:#b04bff;
+--bg:#1e1e1e;--panel:#333;--green:#5da03b;--admin:#b04bff;
 }
-body{
-    margin:0;
-    font-family:'VT323', monospace;
-    background:var(--mc-bg);
-    color:white;
-}
-.hidden{display:none!important}
-header{
-    background:var(--mc-dirt);
-    border-bottom:4px solid #000;
-    padding:10px 20px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-.avatar{width:48px;height:48px;border:2px solid #000;image-rendering:pixelated}
-.container{max-width:650px;margin:20px auto;padding:0 10px}
+body{margin:0;font-family:VT323;background:var(--bg);color:white}
+.hidden{display:none}
+header{background:#866043;border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between}
+.avatar{width:48px;height:48px;border:2px solid #000}
+.container{max-width:700px;margin:20px auto;padding:0 10px}
 
-.post{
-    background:var(--mc-panel);
-    border:3px solid #000;
-    margin-bottom:25px;
-}
-.post-header{
-    background:#444;
-    padding:10px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-.post-body{padding:15px;font-size:1.6rem}
-.post-footer{
-    background:#222;
-    padding:10px;
-    display:flex;
-    gap:20px;
-}
-.comment-box{background:#252525;padding:10px}
-.comment{border-bottom:1px solid #333;padding:5px 0}
-.video-wrapper{position:relative;padding-bottom:56.25%;height:0}
-.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
+.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
+.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
+.post-body{padding:15px;font-size:1.5rem}
+.post-footer{background:#222;padding:10px;display:flex;gap:15px}
+.admin{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.7rem}
 
-.username{cursor:pointer;color:var(--mc-green)}
-.admin-badge{
-    background:var(--admin);
-    color:white;
-    font-size:.7rem;
-    padding:2px 6px;
-    border:2px solid #000;
-}
+.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
+.profile img{width:96px;border:3px solid #000}
+.stats{display:flex;justify-content:space-around;margin:10px 0}
 
-/* PROFILE */
-.profile{
-    background:#444;
-    border:3px solid #000;
-    padding:20px;
-    text-align:center;
-}
-.profile-avatar{
-    width:96px;height:96px;border:3px solid #000;
-}
-.stats{
-    display:flex;
-    justify-content:space-around;
-    margin:15px 0;
-    font-size:1.2rem;
-}
+.btn{padding:8px;border:2px solid #000;background:#aaa;cursor:pointer;font-family:'Press Start 2P';font-size:.6rem}
+.btn-green{background:var(--green);color:white}
+.chat{background:#111;border:3px solid #000;padding:10px;height:250px;overflow-y:auto}
+.msg{margin:4px 0}
+input,textarea{width:100%;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:VT323}
 
-.modal{
-    position:fixed;inset:0;
-    background:rgba(0,0,0,.95);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-.card{
-    background:#8b8b8b;
-    border:4px solid #000;
-    padding:20px;
-    width:360px;
-    text-align:center;
-}
-input,textarea{
-    width:100%;
-    padding:10px;
-    margin:8px 0;
-    background:#000;
-    color:#3f3;
-    border:2px solid #555;
-    font-family:'VT323';
-}
-.btn{
-    width:100%;
-    padding:10px;
-    margin-top:10px;
-    border:2px solid #000;
-    cursor:pointer;
-    font-family:'Press Start 2P';
-    font-size:.6rem;
-}
-.btn-green{background:var(--mc-green);color:white}
-.error{
-    background:#ffaaaa;
-    color:#900;
-    border:2px solid #000;
-    padding:5px;
-    margin-bottom:5px;
-}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center}
+.card{background:#888;border:4px solid #000;padding:20px;width:340px;text-align:center}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="auth-modal" class="modal">
+<div id="auth" class="modal">
 <div class="card">
-<h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
-<div id="auth-error" class="error hidden"></div>
-<input id="auth-user" placeholder="Name">
-<input id="auth-pass" type="password" placeholder="Passwort">
-<input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
-<button class="btn btn-green" onclick="handleAuth()">WELT BETRETEN</button>
-<p id="toggle-auth" style="cursor:pointer;font-size:.8rem" onclick="toggleAuthMode()">
-Noch kein Account? Registrieren
-</p>
+<h3>LOGIN</h3>
+<input id="user" placeholder="Name">
+<input id="pass" type="password" placeholder="Passwort">
+<button class="btn btn-green" onclick="login()">LOGIN</button>
 </div>
 </div>
 
 <header>
-<div style="font-family:'Press Start 2P';color:#3f3">CRAFTNET</div>
-<div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
-<span id="nav-name"></span>
-<img id="nav-avatar" class="avatar">
-</div>
+<div>CRAFTNET</div>
+<div id="nav"></div>
 </header>
 
-<div id="main-content" class="container hidden">
-<div class="post" style="padding:15px;background:#444">
-<textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
-<input id="post-video" placeholder="YouTube Link (optional)">
-<button class="btn btn-green" onclick="createPost()">POSTEN</button>
-</div>
+<div class="container hidden" id="main">
+<textarea id="postText" placeholder="Post..."></textarea>
+<button class="btn btn-green" onclick="createPost()">POST</button>
 <div id="feed"></div>
 </div>
 
 <script>
-const ADMIN_USERS=["Mauvi_"];
+const ADMIN="Mauvi_";
+let users=JSON.parse(localStorage.users||"{}");
+let posts=JSON.parse(localStorage.posts||"[]");
+let chats=JSON.parse(localStorage.chats||"{}");
+let me=null;
 
-let isLoginMode=true;
-let currentUser=null;
-
-let accounts=JSON.parse(localStorage.getItem("cn_accounts"))||{};
-let posts=JSON.parse(localStorage.getItem("cn_posts"))||[];
-
-posts.forEach(p=>{
-    if(!Array.isArray(p.likes))p.likes=[];
-    if(!Array.isArray(p.comments))p.comments=[];
-});
-
-const el=id=>document.getElementById(id);
-const isAdmin=u=>ADMIN_USERS.includes(u);
-
-function toggleAuthMode(){
-    isLoginMode=!isLoginMode;
-    el("auth-title").innerText=isLoginMode?"LOGIN":"REGISTRIEREN";
-    el("auth-skin").classList.toggle("hidden",isLoginMode);
-    el("toggle-auth").innerText=isLoginMode?
-        "Noch kein Account? Registrieren":
-        "Bereits ein Account? Login";
+function save(){
+localStorage.users=JSON.stringify(users);
+localStorage.posts=JSON.stringify(posts);
+localStorage.chats=JSON.stringify(chats);
 }
 
-function showError(m){
-    el("auth-error").innerText=m;
-    el("auth-error").classList.remove("hidden");
-}
-
-function handleAuth(){
-    let n=el("auth-user").value.trim();
-    let p=el("auth-pass").value;
-    let s=el("auth-skin").value.trim();
-    if(!n||p.length<4)return showError("Name & Passwort!");
-
-    if(isLoginMode){
-        if(accounts[n]&&accounts[n].pass===p)login(n);
-        else showError("Falsche Daten!");
-    }else{
-        if(accounts[n])return showError("Name belegt!");
-        let img=s.includes("http")?s:`https://minotar.net/avatar/${s||n}.png`;
-        accounts[n]={pass:p,skin:img};
-        localStorage.setItem("cn_accounts",JSON.stringify(accounts));
-        alert("Registriert!");
-        toggleAuthMode();
-    }
-}
-
-function login(n){
-    currentUser={name:n,...accounts[n],admin:isAdmin(n)};
-    el("auth-modal").classList.add("hidden");
-    el("main-content").classList.remove("hidden");
-    el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText=n+(currentUser.admin?" [ADMIN]":"");
-    el("nav-avatar").src=currentUser.skin;
-    renderFeed();
-}
-
-function extractYT(u){
-    let m=u.match(/(?:v=|\.be\/)([^&]+)/);
-    return m?m[1]:null;
+function login(){
+let u=user.value;
+let p=pass.value;
+if(!users[u])users[u]={pass:p,skin:`https://minotar.net/avatar/${u}`,bio:"",status:"",friends:[]};
+if(users[u].pass!==p)return alert("Falsch");
+me=u;
+auth.classList.add("hidden");
+main.classList.remove("hidden");
+nav.innerHTML=u+(u===ADMIN?" <span class='admin'>ADMIN</span>":"");
+renderFeed();
 }
 
 function createPost(){
-    let t=el("post-text").value.trim();
-    if(!t)return;
-    posts.unshift({
-        id:Date.now(),
-        author:currentUser.name,
-        pfp:currentUser.skin,
-        text:t,
-        video:extractYT(el("post-video").value),
-        likes:[],
-        comments:[]
-    });
-    save();renderFeed();
-    el("post-text").value="";
-    el("post-video").value="";
+posts.unshift({id:Date.now(),author:me,text:postText.value,likes:[]});
+postText.value="";
+save();renderFeed();
 }
-
-function likePost(id){
-    let p=posts.find(x=>x.id===id);
-    if(p.likes.includes(currentUser.name))return;
-    p.likes.push(currentUser.name);
-    save();renderFeed();
-}
-
-function save(){localStorage.setItem("cn_posts",JSON.stringify(posts));}
 
 function renderFeed(){
-    el("feed").innerHTML="";
-    posts.forEach(renderPost);
+feed.innerHTML="";
+posts.forEach(p=>{
+feed.innerHTML+=`
+<div class="post">
+<div class="post-header">
+<img class="avatar" src="${users[p.author].skin}">
+<b onclick="profile('${p.author}')">${p.author}</b>
+${p.author===ADMIN?'<span class="admin">ADMIN</span>':''}
+</div>
+<div class="post-body">${p.text}</div>
+<div class="post-footer">
+<span>⛏ ${p.likes.length}</span>
+${me===ADMIN?`<span onclick="delPost(${p.id})">🗑</span>`:""}
+</div>
+</div>`;
+});
 }
 
-function renderPost(p){
-    el("feed").innerHTML+=`
-    <div class="post">
-        <div class="post-header">
-            <img class="avatar" src="${p.pfp}">
-            <b class="username" onclick="showProfile('${p.author}')">${p.author}</b>
-            ${isAdmin(p.author)?`<span class="admin-badge">ADMIN</span>`:""}
-        </div>
-        <div class="post-body">${p.text}</div>
-        ${p.video?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}"></iframe></div>`:""}
-        <div class="post-footer">
-            <span onclick="likePost(${p.id})">⛏️ ${p.likes.length}</span>
-        </div>
-    </div>`;
+function delPost(id){
+posts=posts.filter(p=>p.id!==id);
+save();renderFeed();
 }
 
-function showProfile(u){
-    let userPosts=posts.filter(p=>p.author===u);
-    let likes=userPosts.reduce((a,p)=>a+p.likes.length,0);
+function profile(u){
+let fr=users[u].friends.includes(me);
+feed.innerHTML=`
+<div class="profile">
+<img src="${users[u].skin}">
+<h2>${u}</h2>
+<p>${users[u].status}</p>
+<textarea ${u!==me?"disabled":""} onchange="users[me].bio=this.value;save()">${users[u].bio}</textarea>
+${u!==me?`<button class="btn" onclick="friend('${u}')">${fr?"Freund entfernen":"Freund hinzufügen"}</button>`:""}
+${fr?`<button class="btn" onclick="chat('${u}')">CHAT</button>`:""}
+<button class="btn" onclick="renderFeed()">⬅</button>
+</div>`;
+}
 
-    el("feed").innerHTML=`
-    <div class="profile">
-        <img class="profile-avatar" src="${accounts[u]?.skin||''}">
-        <h2>${u} ${isAdmin(u)?'<span class="admin-badge">ADMIN</span>':''}</h2>
-        <div class="stats">
-            <div>📄 ${userPosts.length}<br>Posts</div>
-            <div>⛏️ ${likes}<br>Likes</div>
-        </div>
-        <button class="btn" onclick="renderFeed()">⬅ Zurück</button>
-    </div>
-    `;
-    userPosts.forEach(renderPost);
+function friend(u){
+if(users[u].friends.includes(me)){
+users[u].friends=users[u].friends.filter(x=>x!==me);
+users[me].friends=users[me].friends.filter(x=>x!==u);
+}else{
+users[u].friends.push(me);
+users[me].friends.push(u);
+}
+save();profile(u);
+}
+
+function chat(u){
+let id=[me,u].sort().join("-");
+chats[id]=chats[id]||[];
+feed.innerHTML=`
+<div class="profile">
+<h3>Chat mit ${u}</h3>
+<div class="chat" id="chatbox">
+${chats[id].map(m=>`<div class="msg"><b>${m.u}:</b> ${m.t}</div>`).join("")}
+</div>
+<input id="msg">
+<button class="btn" onclick="send('${id}','${u}')">SEND</button>
+<button class="btn" onclick="profile('${u}')">⬅</button>
+</div>`;
+}
+
+function send(id,u){
+chats[id].push({u:me,t:msg.value});
+msg.value="";
+save();chat(u);
 }
 </script>
 
