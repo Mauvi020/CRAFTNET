@@ -2,85 +2,101 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>CraftNet Ultimate - Online</title>
+<title>CraftNet Ultimate - Media Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;}
-body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;--blue:#3498db;--red:#e74c3c;--gold:#ffcc00;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;overflow-x:hidden;}
 .hidden{display:none!important;}
-header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:10;position:relative;}
-.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:100;position:sticky;top:0;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';font-size:0.8rem;}
 .avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;object-fit:cover;}
 .container{max-width:700px;margin:20px auto;padding:0 10px}
+
+/* SIDE MENU */
+#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);background:#222;border-right:4px solid #000;z-index:90;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:0.3s;}
+#side-menu.open{transform:translateX(0);}
+.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:0.5rem;text-align:center;color:white;text-decoration:none;display:block;}
+.menu-item:hover{background:var(--green);}
+
+/* CHAT SYSTEM */
+.chat-window{position:fixed;bottom:0;right:20px;width:320px;height:450px;background:#222;border:3px solid #000;display:flex;flex-direction:column;z-index:2000;box-shadow: 0 0 20px rgba(0,0,0,0.5);}
+.chat-header{background:var(--green);padding:10px;display:flex;justify-content:space-between;font-family:'Press Start 2P';font-size:0.5rem;align-items:center;border-bottom:2px solid #000;}
+.chat-messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#111;}
+.msg{padding:8px 12px;border-radius:4px;max-width:85%;font-size:1.2rem;word-wrap:break-word;border:1px solid rgba(255,255,255,0.1);}
+.msg.me{background:var(--green);align-self:flex-end;color:white;}
+.msg.them{background:#333;align-self:flex-start;color:#3f3;}
+.chat-img{max-width:100%; border:1px solid #000; margin-top:5px; display:block;}
+
+/* POSTS */
 .post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
 .post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
-.post-body{padding:15px;font-size:1.5rem}
-.post-footer{background:#222;padding:10px;display:flex;gap:15px;font-size:1rem}
-.username{cursor:pointer;color:var(--green)}
-.admin-badge{background:var(--admin);padding:2px 6px;border:2px solid #000;font-size:.6rem}
-.comment-box{background:#222;border-top:1px solid #444;padding:8px}
-.comment{font-size:1.1rem;margin:4px 0}
-.comment b{color:var(--green)}
-.profile{background:#444;border:3px solid #000;padding:20px;text-align:center}
-.profile img{width:96px;border:3px solid #000}
-.stats{display:flex;justify-content:space-around;margin:10px 0}
-input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323'}
-.btn{width:100%;padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.6rem}
+.post-body{padding:15px;font-size:1.5rem;word-wrap:break-word;}
+.post-footer{background:#222;padding:10px;display:flex;gap:20px;font-size:1.2rem;border-top:1px solid #444;align-items:center;}
+.like-btn{cursor:pointer; transition: 0.2s;}
+.liked{color: var(--red);}
+
+/* UI */
+input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323';font-size:1.2rem;}
+.btn{padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.5rem}
 .btn-green{background:var(--green);color:white}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:1000}
-.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:360px;text-align:center}
-.error{background:#ffaaaa;color:#900;border:2px solid #000;padding:5px;margin-bottom:5px}
-.video-wrapper{position:relative;padding-bottom:56.25%;height:0;margin-top:10px}
-.video-wrapper iframe{position:absolute;inset:0;width:100%;height:100%}
-.post-img{width:100%;max-height:300px;object-fit:contain;margin-top:10px}
-#admin-sidebar{position:fixed;top:0;right:0;width:300px;height:100%;background:#222;border-left:4px solid #000;padding:20px;z-index:999;overflow-y:auto;display:none;}
-#admin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:998;display:none;}
-.user-item{display:flex;justify-content:space-between;align-items:center;padding:5px;border-bottom:1px solid #555;}
+.btn-red{background:var(--red);color:white}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000}
+.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:90%;max-width:400px;text-align:center;}
 </style>
 </head>
 <body>
 
 <div id="auth-modal" class="modal">
     <div class="card">
-        <h2 id="auth-title" style="font-family:'Press Start 2P';font-size:.8rem">LOGIN</h2>
-        <div id="auth-error" class="error hidden"></div>
+        <h2 id="auth-title">LOGIN</h2>
         <input id="auth-user" placeholder="Name">
         <input id="auth-pass" type="password" placeholder="Passwort">
-        <input id="auth-skin" class="hidden" placeholder="MC-Name oder Bild-URL">
-        <button class="btn btn-green" id="auth-btn">WELT BETRETEN</button>
-        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem">Noch kein Account? Registrieren</p>
+        <input id="auth-skin" class="hidden" placeholder="Skin-URL">
+        <button class="btn btn-green" id="auth-btn" style="width:100%">WELT BETRETEN</button>
+        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem;margin-top:10px">Registrieren</p>
     </div>
 </div>
 
 <header>
-    <div class="header-title" id="admin-trigger">CRAFTNET</div>
+    <div class="header-title" id="menu-trigger">☰ CRAFTNET</div>
     <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
-        <span id="nav-name"></span>
         <img id="nav-avatar" class="avatar">
+        <button class="btn btn-red" id="btn-logout" style="margin:0; padding:5px 10px;">X</button>
     </div>
 </header>
+
+<div id="side-menu">
+    <div class="menu-item" onclick="location.reload()">🏠 HOME</div>
+    <a href="projekt.html" class="menu-item" style="background:var(--gold); color:black; text-decoration:none;">🎮 PROJEKT-INFO</a>
+    <div class="menu-item" onclick="window.openProfileEdit()">⚙️ PROFIL</div>
+    <div class="menu-item" onclick="window.openFriendsList()">🤝 FREUNDE</div>
+    <div id="admin-section" class="hidden">
+        <hr style="border:1px solid #000">
+        <div class="menu-item" style="background:var(--admin)" onclick="window.openAdminPanel()">👑 USER CONTROL</div>
+    </div>
+</div>
 
 <div id="main" class="container hidden">
     <div class="post" style="padding:15px;background:#444">
         <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
-        <input id="post-video" placeholder="YouTube Link (optional)">
-        <input id="post-img" placeholder="Bild URL (optional)">
-        <button class="btn btn-green" id="btn-post">POSTEN</button>
+        <input id="post-media" placeholder="YouTube oder Bild-URL">
+        <button class="btn btn-green" id="btn-post" style="width:100%">POSTEN</button>
     </div>
     <div id="feed">Lade Welt...</div>
 </div>
 
-<div id="admin-overlay"></div>
-<div id="admin-sidebar">
-    <h2>Admin Menü</h2>
-    <div id="admin-users"></div>
-    <button class="btn" id="admin-close">Schließen</button>
+<div id="chat-container"></div>
+
+<div id="ui-modal" class="modal hidden">
+    <div class="card" id="ui-content"></div>
+    <button onclick="window.closeUI()" class="btn btn-red" style="position:fixed; bottom:20px;">SCHLIESSEN</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, updateDoc, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
@@ -94,194 +110,190 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const ADMIN_USERS = ["Mauvi_"];
-let isLoginMode = true;
+const ADMINS = ["Mauvi_"]; 
 let currentUser = null;
-let userData = null;
 let allUsers = {};
-
+let currentChatUnsubscribe = null;
 const el = id => document.getElementById(id);
-const isAdmin = u => ADMIN_USERS.includes(u);
 
-/* AUTH LOGIC */
-window.toggleAuthMode = () => {
-    isLoginMode = !isLoginMode;
-    el("auth-title").innerText = isLoginMode ? "LOGIN" : "REGISTRIEREN";
-    el("auth-skin").classList.toggle("hidden", isLoginMode);
-    el("toggle-auth").innerText = isLoginMode ? "Noch kein Account? Registrieren" : "Bereits ein Account? Login";
+el("menu-trigger").onclick = () => el("side-menu").classList.toggle("open");
+
+/* --- AUTH --- */
+el("toggle-auth").onclick = () => {
+    const isLogin = el("auth-title").innerText === "LOGIN";
+    el("auth-title").innerText = isLogin ? "REGISTRIEREN" : "LOGIN";
+    el("auth-skin").classList.toggle("hidden", !isLogin);
 };
-el("toggle-auth").onclick = window.toggleAuthMode;
 
-window.handleAuth = async () => {
-    const n = el("auth-user").value.trim();
-    const p = el("auth-pass").value;
-    const s = el("auth-skin").value.trim();
-    
-    if(!n || p.length < 4) return showError("Name & Passwort (min 4) nötig!");
-
-    const userRef = doc(db, "users", n);
-    const userSnap = await getDoc(userRef);
-
-    if(isLoginMode) {
-        if(userSnap.exists() && userSnap.data().pass === p) {
-            loginUser(n, userSnap.data());
-        } else {
-            showError("Falsche Daten!");
-        }
-    } else {
-        if(userSnap.exists()) return showError("Name vergeben!");
-        const newUser = {
-            pass: p,
-            skin: s.includes("http") ? s : `https://minotar.net/avatar/${s || n}`,
-            bio: "Ich bin neu hier!",
-            status: "Online",
-            friends: []
-        };
-        await setDoc(userRef, newUser);
-        alert("Account erstellt! Logge dich jetzt ein.");
-        toggleAuthMode();
-    }
-};
-el("auth-btn").onclick = window.handleAuth;
-
-function showError(msg) {
-    el("auth-error").innerText = msg;
-    el("auth-error").classList.remove("hidden");
-}
-
-function loginUser(name, data) {
+async function login(name, data) {
     currentUser = name;
-    userData = data;
+    localStorage.setItem("craftnet_session", name);
     el("auth-modal").classList.add("hidden");
     el("main").classList.remove("hidden");
     el("nav-info").classList.remove("hidden");
-    el("nav-name").innerText = name + (isAdmin(name) ? " [ADMIN]" : "");
-    el("nav-avatar").src = data.skin;
+    el("nav-avatar").src = data.skin || `https://minotar.net/avatar/${name}`;
+    if(ADMINS.includes(name)) el("admin-section").classList.remove("hidden");
     startApp();
 }
 
-/* FEED & POSTS */
-function startApp() {
-    // Nutzerliste für Avatare laden
-    onSnapshot(collection(db, "users"), (snap) => {
-        snap.forEach(doc => allUsers[doc.id] = doc.data());
-        renderAdminSidebar();
-    });
+el("auth-btn").onclick = async () => {
+    const n = el("auth-user").value.trim();
+    const p = el("auth-pass").value;
+    if(!n || p.length < 4) return alert("Eingabe prüfen!");
+    const snap = await getDoc(doc(db, "users", n));
+    if(el("auth-title").innerText === "LOGIN") {
+        if(snap.exists() && snap.data().pass === p) login(n, snap.data());
+        else alert("Falsche Daten!");
+    } else {
+        if(snap.exists()) return alert("Name vergeben!");
+        const data = { pass: p, skin: el("auth-skin").value || `https://minotar.net/avatar/${n}`, bio: "Miner", friends: [] };
+        await setDoc(doc(db, "users", n), data);
+        login(n, data);
+    }
+};
 
-    // Posts laden (Echtzeit)
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snap) => {
-        const posts = [];
-        snap.forEach(doc => posts.push({id: doc.id, ...doc.data()}));
-        renderFeed(posts);
+el("btn-logout").onclick = () => { localStorage.removeItem("craftnet_session"); location.reload(); };
+
+window.addEventListener('DOMContentLoaded', async () => {
+    const saved = localStorage.getItem("craftnet_session");
+    if(saved) {
+        const snap = await getDoc(doc(db, "users", saved));
+        if(snap.exists()) login(saved, snap.data());
+    }
+});
+
+/* --- FEED & KOMMENTARE --- */
+function startApp() {
+    onSnapshot(collection(db, "users"), snap => snap.forEach(d => allUsers[d.id] = d.data()));
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(30));
+    onSnapshot(q, snap => {
+        el("feed").innerHTML = "";
+        snap.forEach(docSnap => {
+            const p = docSnap.data();
+            const id = docSnap.id;
+            const hasLiked = p.likedBy?.includes(currentUser);
+            const ytId = p.media?.match(/(?:v=|\.be\/|embed\/)([^&?#/]+)/)?.[1];
+            
+            el("feed").innerHTML += `
+                <div class="post">
+                    <div class="post-header">
+                        <img class="avatar" src="${allUsers[p.author]?.skin || ''}">
+                        <b onclick="window.showUserPage('${p.author}')" style="cursor:pointer">${p.author}</b>
+                    </div>
+                    <div class="post-body">
+                        ${p.text}
+                        ${ytId ? `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytId}" frameborder="0" style="width:100%; height:300px"></iframe></div>` : ""}
+                        ${(p.media && !ytId) ? `<img src="${p.media}" style="width:100%;margin-top:10px;border:2px solid #000">` : ""}
+                    </div>
+                    <div class="post-footer">
+                        <span class="like-btn ${hasLiked ? 'liked' : ''}" onclick="window.toggleLike('${id}', ${hasLiked})">
+                            ${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}
+                        </span>
+                        <span onclick="window.showComments('${id}')" style="cursor:pointer">💬 ${p.comments?.length || 0}</span>
+                        ${ADMINS.includes(currentUser) ? `<span onclick="window.delPost('${id}')" style="color:red;cursor:pointer">🗑</span>` : ""}
+                    </div>
+                </div>`;
+        });
     });
 }
 
-el("btn-post").onclick = async () => {
-    const text = el("post-text").value.trim();
-    if(!text) return;
-    const video = extractYT(el("post-video").value);
-    const img = el("post-img").value.trim();
-    
-    await addDoc(collection(db, "posts"), {
-        author: currentUser,
-        text,
-        video,
-        img,
-        timestamp: Date.now(),
-        likes: [],
-        comments: []
-    });
-    
-    el("post-text").value = ""; el("post-video").value = ""; el("post-img").value = "";
-};
-
-function extractYT(url){const m=url.match(/(?:v=|\.be\/)([^&]+)/);return m?m[1]:null;}
-
-window.likePost = async (id, likes) => {
-    if(likes.includes(currentUser)) return;
-    await updateDoc(doc(db, "posts", id), {
-        likes: arrayUnion(currentUser)
-    });
+window.showComments = async (postId) => {
+    const postSnap = await getDoc(doc(db, "posts", postId));
+    const p = postSnap.data();
+    el("ui-modal").classList.remove("hidden");
+    let html = `<h3>KOMMENTARE</h3><div style="max-height:200px; overflow-y:auto; text-align:left; background:#222; padding:10px; border:2px solid #000; margin-bottom:10px;">`;
+    if (p.comments && p.comments.length > 0) {
+        p.comments.forEach(c => {
+            html += `<div style="border-bottom:1px solid #444; margin-bottom:5px; padding-bottom:5px;"><b style="color:var(--green)">${c.u}:</b> ${c.t}</div>`;
+        });
+    } else { html += `<p style="font-size:1rem; opacity:0.5;">Noch leer...</p>`; }
+    html += `</div><button class="btn btn-green" style="width:100%" onclick="window.addComment('${postId}')">+ KOMMENTAR</button>`;
+    el("ui-content").innerHTML = html;
 };
 
 window.addComment = async (id) => {
     const msg = prompt("Dein Kommentar:");
-    if(!msg) return;
-    const postRef = doc(db, "posts", id);
-    const snap = await getDoc(postRef);
-    const comments = snap.data().comments || [];
-    comments.push({u: currentUser, t: msg});
-    await updateDoc(postRef, { comments });
-};
-
-window.deletePost = async (id) => {
-    if(!isAdmin(currentUser)) return;
-    if(confirm("Post wirklich löschen?")) await deleteDoc(doc(db, "posts", id));
-};
-
-function renderFeed(posts) {
-    el("feed").innerHTML = posts.map(p => `
-        <div class="post">
-            <div class="post-header">
-                <img class="avatar" src="${allUsers[p.author]?.skin || ''}">
-                <b class="username" onclick="window.showProfile('${p.author}')">${p.author}</b>
-                ${isAdmin(p.author) ? '<span class="admin-badge">ADMIN</span>' : ''}
-            </div>
-            <div class="post-body">${p.text}</div>
-            ${p.video ? `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${p.video}" frameborder="0"></iframe></div>` : ""}
-            ${p.img ? `<img class="post-img" src="${p.img}">` : ""}
-            <div class="post-footer">
-                <span onclick="likePost('${p.id}', ${JSON.stringify(p.likes)})" style="cursor:pointer">⛏️ ${p.likes.length}</span>
-                <span onclick="addComment('${p.id}')" style="cursor:pointer">💬 ${p.comments.length}</span>
-                ${isAdmin(currentUser) ? `<span onclick="deletePost('${p.id}')" style="cursor:pointer">🗑</span>` : ""}
-            </div>
-            <div class="comment-box ${p.comments.length === 0 ? 'hidden' : ''}">
-                ${p.comments.map(c => `<div class="comment"><b>${c.u}:</b> ${c.t}</div>`).join("")}
-            </div>
-        </div>
-    `).join("");
-}
-
-/* PROFILE */
-window.showProfile = async (u) => {
-    const user = allUsers[u];
-    el("feed").innerHTML = `
-    <div class="profile">
-        <img src="${user.skin}">
-        <h2>${u}</h2>
-        <p>${user.bio}</p>
-        <div class="stats"><div>Status: ${user.status}</div></div>
-        <button class="btn" onclick="location.reload()">⬅ Zurück</button>
-    </div>`;
-};
-
-/* ADMIN */
-el("admin-trigger").onclick = () => {
-    if(!isAdmin(currentUser)) return;
-    el("admin-overlay").style.display = "block";
-    el("admin-sidebar").style.display = "block";
-};
-el("admin-close").onclick = () => {
-    el("admin-overlay").style.display = "none";
-    el("admin-sidebar").style.display = "none";
-};
-
-function renderAdminSidebar() {
-    const container = el("admin-users");
-    container.innerHTML = Object.keys(allUsers).map(u => `
-        <div class="user-item">
-            <span>${u}</span>
-            ${u !== currentUser ? `<button onclick="window.deleteUser('${u}')" style="background:red;color:white;border:none;cursor:pointer">X</button>` : ""}
-        </div>
-    `).join("");
-}
-
-window.deleteUser = async (u) => {
-    if(confirm(`User ${u} wirklich löschen?`)) {
-        await deleteDoc(doc(db, "users", u));
+    if(msg) {
+        await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ u: currentUser, t: msg }) });
+        window.showComments(id);
     }
 };
+
+window.toggleLike = async (postId, alreadyLiked) => {
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, {
+        likes: increment(alreadyLiked ? -1 : 1),
+        likedBy: alreadyLiked ? arrayRemove(currentUser) : arrayUnion(currentUser)
+    });
+};
+
+el("btn-post").onclick = async () => {
+    const text = el("post-text").value.trim();
+    if(!text) return;
+    await addDoc(collection(db, "posts"), { 
+        author: currentUser, text, media: el("post-media").value, 
+        timestamp: Date.now(), comments: [], likes: 0, likedBy: [] 
+    });
+    el("post-text").value = ""; el("post-media").value = "";
+};
+
+window.delPost = async id => { if(confirm("Löschen?")) await deleteDoc(doc(db, "posts", id)); };
+
+/* --- CHAT SYSTEM --- */
+window.openChat = (target) => {
+    window.closeUI(); el("side-menu").classList.remove("open");
+    if(currentChatUnsubscribe) currentChatUnsubscribe();
+    const chatId = [currentUser, target].sort().join("_");
+    el("chat-container").innerHTML = `<div class="chat-window"><div class="chat-header"><span>${target}</span><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer">X</span></div><div id="chat-msgs" class="chat-messages"></div><div style="padding:10px; background:#222;"><input id="chat-input" placeholder="Nachricht..."></div></div>`;
+    const q = query(collection(db, "chats", chatId, "messages"), orderBy("t", "asc"), limit(100));
+    currentChatUnsubscribe = onSnapshot(q, snap => {
+        const box = el("chat-msgs"); box.innerHTML = "";
+        snap.forEach(d => {
+            const m = d.data(); const isImg = m.m.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            box.innerHTML += `<div class="msg ${m.u === currentUser ? 'me' : 'them'}">${isImg ? `<img src="${m.m}" class="chat-img">` : m.m}</div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+    });
+    el("chat-input").onkeydown = async e => {
+        if(e.key === "Enter" && e.target.value.trim()) {
+            await addDoc(collection(db, "chats", chatId, "messages"), { u: currentUser, m: e.target.value, t: Date.now() });
+            e.target.value = "";
+        }
+    };
+};
+
+/* --- UI HELPERS --- */
+window.closeUI = () => el("ui-modal").classList.add("hidden");
+window.openFriendsList = () => {
+    const friends = allUsers[currentUser]?.friends || [];
+    el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Suche neue Freunde!");
+};
+window.showUserPage = (name) => {
+    const u = allUsers[name]; el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `<img src="${u.skin}" style="width:80px; image-rendering:pixelated; border:2px solid #000"><h2>${name}</h2><p>${u.bio || 'Miner'}</p>${(name !== currentUser && !allUsers[currentUser].friends?.includes(name)) ? `<button class="btn btn-blue" onclick="window.addFriend('${name}')">HINZUFÜGEN</button>` : (name !== currentUser ? `<button class="btn btn-green" onclick="window.openChat('${name}')">CHAT</button>` : "")}`;
+};
+window.addFriend = async name => {
+    await updateDoc(doc(db, "users", name), { friends: arrayUnion(currentUser) });
+    await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(name) });
+    alert("Befreundet!"); window.closeUI();
+};
+window.openProfileEdit = () => {
+    const u = allUsers[currentUser]; el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `<h3>⚙️ PROFIL</h3>Skin URL:<input id="edit-skin" value="${u.skin || ''}">Bio:<textarea id="edit-bio">${u.bio || ''}</textarea><button class="btn btn-green" onclick="window.saveProfile()">SPEICHERN</button>`;
+};
+window.saveProfile = async () => {
+    await updateDoc(doc(db, "users", currentUser), { skin: el("edit-skin").value, bio: el("edit-bio").value });
+    location.reload();
+};
+window.openAdminPanel = async () => {
+    el("ui-modal").classList.remove("hidden");
+    const snap = await getDocs(collection(db, "users"));
+    let html = "<h3>👑 ADMIN</h3>";
+    snap.forEach(d => { if(d.id !== currentUser) html += `<div style="background:#444; margin:5px; padding:10px; border:2px solid #000"><b>${d.id}</b> <button class="btn btn-red" onclick="window.adminDelUser('${d.id}')">X</button></div>`; });
+    el("ui-content").innerHTML = html;
+};
+window.adminDelUser = async n => { if(confirm(`Löschen?`)) await deleteDoc(doc(db, "users", n)); window.openAdminPanel(); };
 </script>
 </body>
 </html>
