@@ -83,8 +83,6 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
     <div class="post" style="padding:15px;background:#444">
         <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
         <input id="post-media" placeholder="YouTube oder Bild-URL">
-        <!-- NEU: Eigene Datei hochladen -->
-        <input type="file" id="post-file" accept="image/*">
         <button class="btn btn-green" id="btn-post" style="width:100%">POSTEN</button>
     </div>
     <div id="feed">Lade Welt...</div>
@@ -100,7 +98,6 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
@@ -113,7 +110,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 const ADMINS = ["Mauvi_"]; 
 let currentUser = null;
@@ -202,29 +198,146 @@ function startApp() {
     });
 }
 
-/* --- NEU: POST MIT DATEIUPLOAD --- */
-el("btn-post").onclick = async () => {
-    const text = el("post-text").value.trim();
-    let mediaUrl = el("post-media").value.trim();
-    const file = el("post-file").files[0];
-
-    if(file){
-        const fileRef = ref(storage, `posts/${currentUser}_${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        mediaUrl = await getDownloadURL(fileRef);
-    }
-
-    if(!text && !mediaUrl) return alert("Bitte Text oder Medien eingeben!");
-    
-    await addDoc(collection(db, "posts"), { author: currentUser, text, media: mediaUrl || "", timestamp: Date.now(), comments: [], likes: 0, likedBy: [] });
-
-    el("post-text").value = "";
-    el("post-media").value = "";
-    el("post-file").value = "";
+window.showComments = async (postId) => {
+    const postSnap = await getDoc(doc(db, "posts", postId));
+    const p = postSnap.data();
+    el("ui-modal").classList.remove("hidden");
+    let html = `<h3>KOMMENTARE</h3><div class="comment-box">`;
+    if(p.comments?.length) {
+        p.comments.forEach(c => html += `<div style="margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;"><b style="color:var(--green)">${c.u}:</b> ${c.t}</div>`);
+    } else html += `<p style="opacity:0.5;">Keine Kommentare.</p>`;
+    html += `</div><input id="new-comm-input" placeholder="Schreiben..."><button class="btn btn-green" style="width:100%" onclick="window.submitComment('${postId}')">SENDEN</button>`;
+    el("ui-content").innerHTML = html;
 };
 
-/* --- Restlicher Code für Chat, Likes, Kommentare bleibt unverändert --- */
+window.submitComment = async (id) => {
+    const text = el("new-comm-input").value.trim();
+    if(!text) return;
+    await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ u: currentUser, t: text }) });
+    window.showComments(id);
+};
 
+window.toggleLike = async (postId, alreadyLiked) => {
+    await updateDoc(doc(db, "posts", postId), { likes: increment(alreadyLiked ? -1 : 1), likedBy: alreadyLiked ? arrayRemove(currentUser) : arrayUnion(currentUser) });
+};
+
+el("btn-post").onclick = async () => {
+    const text = el("post-text").value.trim();
+    if(!text) return;
+    await addDoc(collection(db, "posts"), { author: currentUser, text, media: el("post-media").value, timestamp: Date.now(), comments: [], likes: 0, likedBy: [] });
+    el("post-text").value = ""; el("post-media").value = "";
+};
+
+window.delPost = async id => { if(confirm("Löschen?")) await deleteDoc(doc(db, "posts", id)); };
+
+/* --- OWNER PAGE --- */
+window.openOwnerPage = () => {
+    el("side-menu").classList.remove("open");
+    el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `
+        <h2 style="color:var(--gold)">👑 OWNER</h2>
+        <img src="https://minotar.net/avatar/Mauvi_" style="width:80px; image-rendering:pixelated; border:4px solid #000; margin-bottom:10px;">
+        <p style="font-size:1.5rem">Folgt mir auf meinen Kanälen!</p>
+        
+        <a href="https://youtube.com/@mauvi020?si=vSFNaTIx8dcije8d" target="_blank" class="btn" style="background:var(--yt); color:white; display:block; text-decoration:none; margin-bottom:10px;">📺 YOUTUBE</a>
+        
+        <a href="https://www.tiktok.com/@mauvi_cat?_r=1&_t=ZG-936669Va7qy" target="_blank" class="btn" style="background:var(--tt); color:black; display:block; text-decoration:none;">📱 TIKTOK</a>
+        
+        <p style="margin-top:20px; font-size:0.8rem; opacity:0.7;">CraftNet v2.0 - Developed by Mauvi_</p>
+    `;
+};
+
+/* --- UI HELPERS --- */
+window.closeUI = () => el("ui-modal").classList.add("hidden");
+window.openFriendsList = () => {
+    const friends = allUsers[currentUser]?.friends || [];
+    el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Keine Freunde.");
+};
+window.openChat = (target) => {
+    window.closeUI();
+    const chatId = [currentUser, target].sort().join("_");
+    el("chat-container").innerHTML = `<div class="chat-window"><div class="chat-header"><span>${target}</span><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer">X</span></div><div id="chat-msgs" class="chat-messages"></div><div style="padding:10px; background:#222;"><input id="chat-input" placeholder="Nachricht..."></div></div>`;
+    const q = query(collection(db, "chats", chatId, "messages"), orderBy("t", "asc"), limit(50));
+    onSnapshot(q, snap => {
+        el("chat-msgs").innerHTML = "";
+        snap.forEach(d => el("chat-msgs").innerHTML += `<div class="msg ${d.data().u === currentUser ? 'me' : 'them'}">${d.data().m}</div>`);
+        el("chat-msgs").scrollTop = el("chat-msgs").scrollHeight;
+    });
+    el("chat-input").onkeydown = async e => { if(e.key === "Enter" && e.target.value.trim()){ await addDoc(collection(db, "chats", chatId, "messages"), { u: currentUser, m: e.target.value, t: Date.now() }); e.target.value=""; } };
+};
+window.showUserPage = (name) => {
+    const u = allUsers[name]; el("ui-modal").classList.remove("hidden");
+    el("ui-content").innerHTML = `<img src="${u.skin}" style="width:80px; image-rendering:pixelated; border:2px solid #000"><h2>${name}</h2><p>${u.bio || 'Miner'}</p>${(name !== currentUser && !allUsers[currentUser].friends?.includes(name)) ? `<button class="btn btn-blue" onclick="window.addFriend('${name}')">HINZUFÜGEN</button>` : (name !== currentUser ? `<button class="btn btn-green" onclick="window.openChat('${name}')">CHAT</button>` : "")}`;
+};
+window.addFriend = async name => { await updateDoc(doc(db, "users", name), { friends: arrayUnion(currentUser) }); await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(name) }); alert("Befreundet!"); window.closeUI(); };
+window.openProfileEdit = () => { const u = allUsers[currentUser]; el("ui-modal").classList.remove("hidden"); el("ui-content").innerHTML = `<h3>⚙️ PROFIL</h3>Skin URL:<input id="edit-skin" value="${u.skin || ''}">Bio:<textarea id="edit-bio">${u.bio || ''}</textarea><button class="btn btn-green" onclick="window.saveProfile()">SPEICHERN</button>`; };
+window.saveProfile = async () => { await updateDoc(doc(db, "users", currentUser), { skin: el("edit-skin").value, bio: el("edit-bio").value }); location.reload(); };
+window.openAdminPanel = async () => { el("ui-modal").classList.remove("hidden"); const snap = await getDocs(collection(db, "users")); let html = "<h3>👑 ADMIN</h3>"; snap.forEach(d => { if(d.id !== currentUser) html += `<div style="background:#444; margin:5px; padding:10px; border:2px solid #000"><b>${d.id}</b> <button class="btn btn-red" onclick="window.adminDelUser('${d.id}')">X</button></div>`; }); el("ui-content").innerHTML = html; };
+window.adminDelUser = async n => { if(confirm(`Löschen?`)) await deleteDoc(doc(db, "users", n)); window.openAdminPanel(); };
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
