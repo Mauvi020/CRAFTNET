@@ -68,4 +68,163 @@ input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;backgro
 </header>
 
 <div id="side-menu">
-    <div class="menu-item"
+    <div class="menu-item" onclick="location.reload()">🏠 HOME</div>
+    <div class="menu-item" onclick="window.openProfileEdit()">⚙️ PROFIL</div>
+    <div class="menu-item" onclick="window.openFriendsList()">🤝 FREUNDE</div>
+    <div class="menu-item" style="background:var(--gold); color:black;" onclick="window.openOwnerPage()">👑 OWNER</div>
+    
+    <div id="admin-section" class="hidden">
+        <hr style="border:1px solid #000">
+        <div class="menu-item" style="background:var(--admin)" onclick="window.openAdminPanel()">👑 USER CONTROL</div>
+    </div>
+</div>
+
+<div id="main" class="container hidden">
+    <div class="post" style="padding:15px;background:#444">
+        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
+        <input id="post-media" placeholder="YouTube oder Bild-URL">
+        <!-- NEU: Eigene Datei hochladen -->
+        <input type="file" id="post-file" accept="image/*">
+        <button class="btn btn-green" id="btn-post" style="width:100%">POSTEN</button>
+    </div>
+    <div id="feed">Lade Welt...</div>
+</div>
+
+<div id="chat-container"></div>
+
+<div id="ui-modal" class="modal hidden">
+    <div class="card" id="ui-content"></div>
+    <button onclick="window.closeUI()" class="btn btn-red" style="position:fixed; bottom:20px;">SCHLIESSEN</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
+  authDomain: "craftnet-1c6d1.firebaseapp.com",
+  projectId: "craftnet-1c6d1",
+  storageBucket: "craftnet-1c6d1.firebasestorage.app",
+  messagingSenderId: "679779814784",
+  appId: "1:679779814784:web:d42642d13217015f9f8565"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+const ADMINS = ["Mauvi_"]; 
+let currentUser = null;
+let allUsers = {};
+let currentChatUnsubscribe = null;
+const el = id => document.getElementById(id);
+
+el("menu-trigger").onclick = () => el("side-menu").classList.toggle("open");
+
+/* --- LOGIN / REGISTER --- */
+el("toggle-auth").onclick = () => {
+    const isLogin = el("auth-title").innerText === "LOGIN";
+    el("auth-title").innerText = isLogin ? "REGISTRIEREN" : "LOGIN";
+    el("auth-skin").classList.toggle("hidden", !isLogin);
+};
+
+async function login(name, data) {
+    currentUser = name;
+    localStorage.setItem("craftnet_session", name);
+    el("auth-modal").classList.add("hidden");
+    el("main").classList.remove("hidden");
+    el("nav-info").classList.remove("hidden");
+    el("nav-avatar").src = data.skin || `https://minotar.net/avatar/${name}`;
+    if(ADMINS.includes(name)) el("admin-section").classList.remove("hidden");
+    startApp();
+}
+
+el("auth-btn").onclick = async () => {
+    const n = el("auth-user").value.trim();
+    const p = el("auth-pass").value;
+    if(!n || p.length < 4) return alert("Eingabe prüfen!");
+    const snap = await getDoc(doc(db, "users", n));
+    if(el("auth-title").innerText === "LOGIN") {
+        if(snap.exists() && snap.data().pass === p) login(n, snap.data());
+        else alert("Falsche Daten!");
+    } else {
+        if(snap.exists()) return alert("Name vergeben!");
+        const data = { pass: p, skin: el("auth-skin").value || `https://minotar.net/avatar/${n}`, bio: "Miner", friends: [] };
+        await setDoc(doc(db, "users", n), data);
+        login(n, data);
+    }
+};
+
+el("btn-logout").onclick = () => { localStorage.removeItem("craftnet_session"); location.reload(); };
+
+window.addEventListener('DOMContentLoaded', async () => {
+    const saved = localStorage.getItem("craftnet_session");
+    if(saved) {
+        const snap = await getDoc(doc(db, "users", saved));
+        if(snap.exists()) login(saved, snap.data());
+    }
+});
+
+/* --- FEED & KOMMENTARE --- */
+function startApp() {
+    onSnapshot(collection(db, "users"), snap => snap.forEach(d => allUsers[d.id] = d.data()));
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(30));
+    onSnapshot(q, snap => {
+        el("feed").innerHTML = "";
+        snap.forEach(docSnap => {
+            const p = docSnap.data();
+            const id = docSnap.id;
+            const hasLiked = p.likedBy?.includes(currentUser);
+            const ytId = p.media?.match(/(?:v=|\.be\/|embed\/)([^&?#/]+)/)?.[1];
+            
+            el("feed").innerHTML += `
+                <div class="post">
+                    <div class="post-header">
+                        <img class="avatar" src="${allUsers[p.author]?.skin || ''}">
+                        <b onclick="window.showUserPage('${p.author}')" style="cursor:pointer">${p.author}</b>
+                    </div>
+                    <div class="post-body">
+                        ${p.text}
+                        ${ytId ? `<iframe src="https://www.youtube.com/embed/${ytId}" frameborder="0" style="width:100%; height:300px"></iframe>` : ""}
+                        ${(p.media && !ytId) ? `<img src="${p.media}" style="width:100%;margin-top:10px;border:2px solid #000">` : ""}
+                    </div>
+                    <div class="post-footer">
+                        <span class="like-btn ${hasLiked ? 'liked' : ''}" onclick="window.toggleLike('${id}', ${hasLiked})">
+                            ${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}
+                        </span>
+                        <span onclick="window.showComments('${id}')" style="cursor:pointer">💬 ${p.comments?.length || 0}</span>
+                        ${ADMINS.includes(currentUser) ? `<span onclick="window.delPost('${id}')" style="color:red;cursor:pointer">🗑</span>` : ""}
+                    </div>
+                </div>`;
+        });
+    });
+}
+
+/* --- NEU: POST MIT DATEIUPLOAD --- */
+el("btn-post").onclick = async () => {
+    const text = el("post-text").value.trim();
+    let mediaUrl = el("post-media").value.trim();
+    const file = el("post-file").files[0];
+
+    if(file){
+        const fileRef = ref(storage, `posts/${currentUser}_${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        mediaUrl = await getDownloadURL(fileRef);
+    }
+
+    if(!text && !mediaUrl) return alert("Bitte Text oder Medien eingeben!");
+    
+    await addDoc(collection(db, "posts"), { author: currentUser, text, media: mediaUrl || "", timestamp: Date.now(), comments: [], likes: 0, likedBy: [] });
+
+    el("post-text").value = "";
+    el("post-media").value = "";
+    el("post-file").value = "";
+};
+
+/* --- Restlicher Code für Chat, Likes, Kommentare bleibt unverändert --- */
+
+</script>
+</body>
+</html>
