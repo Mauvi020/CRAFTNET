@@ -5,38 +5,26 @@
 <title>CraftNet Ultimate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-
 <style>
-:root{
---bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;
---blue:#3498db;--gold:#ffcc00;--red:#e74c3c;
-}
-body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace}
-.hidden{display:none!important}
-header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
-.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';font-size:.8rem}
-.container{max-width:700px;margin:20px auto;padding:0 10px}
-.avatar{width:40px;border:2px solid #000;image-rendering:pixelated}
-
-/* SIDE MENU */
-#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);
-background:#222;border-right:4px solid #000;padding:20px;transform:translateX(-100%);transition:.3s}
-#side-menu.open{transform:translateX(0)}
-.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;
-cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;text-align:center}
-.menu-item:hover{background:var(--green)}
-
-/* POSTS */
-.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
-.post-header{background:#444;padding:10px}
-.post-body{padding:15px;font-size:1.4rem}
-.post-footer{background:#222;padding:10px;border-top:1px solid #444}
-
-/* UI */
-.btn{padding:10px;border:2px solid #000;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem}
-.btn-green{background:var(--green);color:white}
-.btn-red{background:var(--red);color:white}
-.btn-blue{background:var(--blue);color:white}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--blue:#3498db;--gold:#ffcc00;--red:#e74c3c;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
+.hidden{display:none!important;}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';font-size:.8rem;}
+.container{max-width:700px;margin:20px auto;padding:0 10px;}
+.avatar{width:40px;border:2px solid #000;image-rendering:pixelated;}
+#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);background:#222;border-right:4px solid #000;padding:20px;transform:translateX(-100%);transition:.3s;}
+#side-menu.open{transform:translateX(0);}
+.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;text-align:center;}
+.menu-item:hover{background:var(--green);}
+.post{background:var(--panel);border:3px solid #000;margin-bottom:20px;}
+.post-header{background:#444;padding:10px;}
+.post-body{padding:15px;font-size:1.4rem;word-wrap:break-word;}
+.post-footer{background:#222;padding:10px;border-top:1px solid #444;}
+.btn{padding:10px;border:2px solid #000;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;}
+.btn-green{background:var(--green);color:white;}
+.btn-red{background:var(--red);color:white;}
+.btn-blue{background:var(--blue);color:white;}
 </style>
 </head>
 
@@ -46,25 +34,25 @@ cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;text-align:center}
     <div class="header-title" id="menu-trigger">☰ CRAFTNET</div>
 </header>
 
-<!-- SIDE MENU -->
 <div id="side-menu">
-    <div class="menu-item" onclick="goHome()">🏠 HOME</div>
-    <div class="menu-item" style="background:var(--blue)" onclick="openMiniGames()">🎮 MINI-SPIELE</div>
+    <div class="menu-item" onclick="showHome()">🏠 HOME</div>
+    <div class="menu-item" style="background:var(--blue)" onclick="showMiniGames()">🎮 MINI-SPIELE</div>
     <div class="menu-item" style="background:var(--gold);color:black" onclick="openOwner()">👑 OWNER</div>
 </div>
 
-<!-- MAIN -->
 <div id="main" class="container">
+    <!-- FEED -->
     <div id="feed">
         <div class="post">
             <div class="post-header"><b>🌍 WILLKOMMEN</b></div>
             <div class="post-body">
-                CraftNet läuft!  
-                Öffne das Menü ☰ für Mini-Games 🎮
+                Das ist CraftNet!  
+                Poste, chatte mit Freunden und entdecke Mini-Spiele 🎮.
             </div>
         </div>
     </div>
 
+    <!-- MINI GAMES -->
     <div id="minigames" class="hidden"></div>
 </div>
 
@@ -78,52 +66,42 @@ const firebaseConfig = {
   authDomain: "craftnet-1c6d1.firebaseapp.com",
   projectId: "craftnet-1c6d1"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const el = id => document.getElementById(id);
 let currentUser = "Gast";
 
-/* MENU */
+/* MENU TOGGLE */
 el("menu-trigger").onclick = () => el("side-menu").classList.toggle("open");
 
-/* HOME */
-window.goHome = () => {
-    el("side-menu").classList.remove("open");
-    el("minigames").classList.add("hidden");
+/* ================= HOME ================= */
+window.showHome = () => {
     el("feed").classList.remove("hidden");
+    el("minigames").classList.add("hidden");
 };
 
-/* OWNER */
+/* ================= OWNER ================= */
 window.openOwner = () => {
-    el("side-menu").classList.remove("open");
     el("feed").classList.add("hidden");
     el("minigames").classList.remove("hidden");
-
     el("minigames").innerHTML = `
         <div class="post">
             <div class="post-header"><b>👑 OWNER</b></div>
-            <div class="post-body">
-                Entwickelt von <b>Mauvi_</b><br><br>
-                CraftNet v2.0
-            </div>
+            <div class="post-body">Entwickelt von <b>Mauvi_</b><br>CraftNet v2.0</div>
             <div class="post-footer">
-                <button class="btn" onclick="goHome()">🏠 HOME</button>
+                <button class="btn" onclick="showHome()">🏠 HOME</button>
             </div>
         </div>
     `;
 };
 
-/* ================= MINI GAMES ================= */
-
+/* ================= MINI-SPIELE ================= */
 let miner = { blocks:0, perClick:1 };
 
-window.openMiniGames = () => {
-    el("side-menu").classList.remove("open");
+window.showMiniGames = () => {
     el("feed").classList.add("hidden");
     el("minigames").classList.remove("hidden");
-
     el("minigames").innerHTML = `
         <div class="post">
             <div class="post-header"><b>🎮 MINI-SPIELE</b></div>
@@ -132,13 +110,12 @@ window.openMiniGames = () => {
                 <button class="btn btn-blue" style="width:100%;margin-top:5px" onclick="openLeaderboard()">🏆 LEADERBOARD</button>
             </div>
             <div class="post-footer">
-                <button class="btn" onclick="goHome()">🏠 HOME</button>
+                <button class="btn" onclick="showHome()">🏠 HOME</button>
             </div>
         </div>
     `;
 };
 
-/* CLICK MINER */
 window.openClickMiner = () => {
     el("minigames").innerHTML = `
         <div class="post">
@@ -146,35 +123,25 @@ window.openClickMiner = () => {
             <div class="post-body" style="text-align:center">
                 <p>Blöcke: <b id="bc">${miner.blocks}</b></p>
                 <p>Pro Klick: ${miner.perClick}</p>
-
                 <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/6/6e/Stone_JE5_BE3.png"
                      style="width:120px;cursor:pointer;border:4px solid #000;image-rendering:pixelated"
                      onclick="mine()">
-
                 <hr>
-
                 <h3>🛒 SHOP</h3>
-                <button class="btn btn-green" style="width:100%"
-                    onclick="upgrade()">+1 Block/Klick (Kosten: ${miner.perClick*10})</button>
-
-                <button class="btn btn-blue" style="width:100%;margin-top:5px"
-                    onclick="saveScore()">💾 Score speichern</button>
+                <button class="btn btn-green" style="width:100%" onclick="upgrade()">+1 Block/Klick (Kosten: ${miner.perClick*10})</button>
+                <button class="btn btn-blue" style="width:100%;margin-top:5px" onclick="saveScore()">💾 Score speichern</button>
             </div>
             <div class="post-footer">
-                <button class="btn" onclick="openMiniGames()">⬅ ZURÜCK</button>
-                <button class="btn" onclick="goHome()">🏠 HOME</button>
+                <button class="btn" onclick="showMiniGames()">⬅ ZURÜCK</button>
+                <button class="btn" onclick="showHome()">🏠 HOME</button>
             </div>
         </div>
     `;
 };
 
-window.mine = () => {
-    miner.blocks += miner.perClick;
-    el("bc").innerText = miner.blocks;
-};
-
+window.mine = () => { miner.blocks += miner.perClick; el("bc").innerText = miner.blocks; };
 window.upgrade = () => {
-    const cost = miner.perClick * 10;
+    const cost = miner.perClick*10;
     if(miner.blocks < cost) return alert("Nicht genug Blöcke!");
     miner.blocks -= cost;
     miner.perClick++;
@@ -183,33 +150,22 @@ window.upgrade = () => {
 
 /* LEADERBOARD */
 window.saveScore = async () => {
-    await setDoc(doc(db,"leaderboard",currentUser),{
-        user:currentUser,
-        blocks:miner.blocks
-    });
-    alert("Gespeichert!");
+    await setDoc(doc(db,"leaderboard",currentUser),{user:currentUser, blocks:miner.blocks});
+    alert("Score gespeichert!");
 };
 
 window.openLeaderboard = async () => {
-    const snap = await getDocs(query(
-        collection(db,"leaderboard"),
-        orderBy("blocks","desc"),
-        limit(10)
-    ));
-
+    const snap = await getDocs(query(collection(db,"leaderboard"), orderBy("blocks","desc"), limit(10)));
     let list = "";
     let i = 1;
-    snap.forEach(d=>{
-        list += `<p>${i++}. <b>${d.data().user}</b> – ${d.data().blocks}</p>`;
-    });
-
+    snap.forEach(d => { list += `<p>${i++}. <b>${d.data().user}</b> – ${d.data().blocks}</p>`; });
     el("minigames").innerHTML = `
         <div class="post">
             <div class="post-header"><b>🏆 LEADERBOARD</b></div>
             <div class="post-body">${list || "Noch leer"}</div>
             <div class="post-footer">
-                <button class="btn" onclick="openMiniGames()">⬅ ZURÜCK</button>
-                <button class="btn" onclick="goHome()">🏠 HOME</button>
+                <button class="btn" onclick="showMiniGames()">⬅ ZURÜCK</button>
+                <button class="btn" onclick="showHome()">🏠 HOME</button>
             </div>
         </div>
     `;
