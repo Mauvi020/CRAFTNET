@@ -2,175 +2,70 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>CraftNet Ultimate</title>
+<title>CraftNet Ultimate - Owner Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--blue:#3498db;--gold:#ffcc00;--red:#e74c3c;}
-body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;--blue:#3498db;--red:#e74c3c;--gold:#ffcc00;--yt:#ff0000;--tt:#00f2ea;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;overflow-x:hidden;}
 .hidden{display:none!important;}
-header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;}
-.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';font-size:.8rem;}
-.container{max-width:700px;margin:20px auto;padding:0 10px;}
-.avatar{width:40px;border:2px solid #000;image-rendering:pixelated;}
-#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);background:#222;border-right:4px solid #000;padding:20px;transform:translateX(-100%);transition:.3s;}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:100;position:sticky;top:0;}
+.header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';font-size:0.8rem;}
+.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;object-fit:cover;}
+.container{max-width:700px;margin:20px auto;padding:0 10px}
+
+/* SIDE MENU */
+#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);background:#222;border-right:4px solid #000;z-index:90;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:0.3s;}
 #side-menu.open{transform:translateX(0);}
-.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;text-align:center;}
+.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:0.5rem;text-align:center;color:white;text-decoration:none;display:block;}
 .menu-item:hover{background:var(--green);}
-.post{background:var(--panel);border:3px solid #000;margin-bottom:20px;}
-.post-header{background:#444;padding:10px;}
-.post-body{padding:15px;font-size:1.4rem;word-wrap:break-word;}
-.post-footer{background:#222;padding:10px;border-top:1px solid #444;}
-.btn{padding:10px;border:2px solid #000;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;}
-.btn-green{background:var(--green);color:white;}
-.btn-red{background:var(--red);color:white;}
-.btn-blue{background:var(--blue);color:white;}
+
+/* CHAT WINDOW */
+.chat-window{position:fixed;bottom:0;right:20px;width:320px;height:450px;background:#222;border:3px solid #000;display:flex;flex-direction:column;z-index:2000;box-shadow: 0 0 20px rgba(0,0,0,0.5);}
+.chat-header{background:var(--green);padding:10px;display:flex;justify-content:space-between;font-family:'Press Start 2P';font-size:0.5rem;align-items:center;border-bottom:2px solid #000;}
+.chat-messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#111;}
+.msg{padding:8px 12px;border-radius:4px;max-width:85%;font-size:1.2rem;word-wrap:break-word;border:1px solid rgba(255,255,255,0.1);}
+.msg.me{background:var(--green);align-self:flex-end;color:white;}
+.msg.them{background:#333;align-self:flex-start;color:#3f3;}
+
+/* POSTS */
+.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
+.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
+.post-body{padding:15px;font-size:1.5rem;word-wrap:break-word;}
+.post-footer{background:#222;padding:10px;display:flex;gap:20px;font-size:1.2rem;border-top:1px solid #444;align-items:center;}
+.like-btn{cursor:pointer;}
+.liked{color: var(--red);}
+
+/* UI / MODAL */
+input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323';font-size:1.2rem;}
+.btn{padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.5rem}
+.btn-green{background:var(--green);color:white}
+.btn-red{background:var(--red);color:white}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000}
+.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:90%;max-width:400px;text-align:center;}
+.comment-box{max-height:200px; overflow-y:auto; text-align:left; background:#111; padding:10px; border:2px solid #000; margin:10px 0;}
 </style>
 </head>
-
 <body>
+
+<div id="auth-modal" class="modal">
+    <div class="card">
+        <h2 id="auth-title">LOGIN</h2>
+        <input id="auth-user" placeholder="Name">
+        <input id="auth-pass" type="password" placeholder="Passwort">
+        <input id="auth-skin" class="hidden" placeholder="Skin-URL">
+        <button class="btn btn-green" id="auth-btn" style="width:100%">WELT BETRETEN</button>
+        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem;margin-top:10px">Registrieren</p>
+    </div>
+</div>
 
 <header>
     <div class="header-title" id="menu-trigger">☰ CRAFTNET</div>
+    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
+        <img id="nav-avatar" class="avatar">
+        <button class="btn btn-red" id="btn-logout" style="margin:0; padding:5px 10px;">X</button>
+    </div>
 </header>
 
 <div id="side-menu">
-    <div class="menu-item" onclick="showHome()">🏠 HOME</div>
-    <div class="menu-item" style="background:var(--blue)" onclick="showMiniGames()">🎮 MINI-SPIELE</div>
-    <div class="menu-item" style="background:var(--gold);color:black" onclick="openOwner()">👑 OWNER</div>
-</div>
-
-<div id="main" class="container">
-    <!-- FEED -->
-    <div id="feed">
-        <div class="post">
-            <div class="post-header"><b>🌍 WILLKOMMEN</b></div>
-            <div class="post-body">
-                Das ist CraftNet!  
-                Poste, chatte mit Freunden und entdecke Mini-Spiele 🎮.
-            </div>
-        </div>
-    </div>
-
-    <!-- MINI GAMES -->
-    <div id="minigames" class="hidden"></div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
-  authDomain: "craftnet-1c6d1.firebaseapp.com",
-  projectId: "craftnet-1c6d1"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const el = id => document.getElementById(id);
-let currentUser = "Gast";
-
-/* MENU TOGGLE */
-el("menu-trigger").onclick = () => el("side-menu").classList.toggle("open");
-
-/* ================= HOME ================= */
-window.showHome = () => {
-    el("feed").classList.remove("hidden");
-    el("minigames").classList.add("hidden");
-};
-
-/* ================= OWNER ================= */
-window.openOwner = () => {
-    el("feed").classList.add("hidden");
-    el("minigames").classList.remove("hidden");
-    el("minigames").innerHTML = `
-        <div class="post">
-            <div class="post-header"><b>👑 OWNER</b></div>
-            <div class="post-body">Entwickelt von <b>Mauvi_</b><br>CraftNet v2.0</div>
-            <div class="post-footer">
-                <button class="btn" onclick="showHome()">🏠 HOME</button>
-            </div>
-        </div>
-    `;
-};
-
-/* ================= MINI-SPIELE ================= */
-let miner = { blocks:0, perClick:1 };
-
-window.showMiniGames = () => {
-    el("feed").classList.add("hidden");
-    el("minigames").classList.remove("hidden");
-    el("minigames").innerHTML = `
-        <div class="post">
-            <div class="post-header"><b>🎮 MINI-SPIELE</b></div>
-            <div class="post-body">
-                <button class="btn btn-green" style="width:100%" onclick="openClickMiner()">⛏️ CLICK MINER</button>
-                <button class="btn btn-blue" style="width:100%;margin-top:5px" onclick="openLeaderboard()">🏆 LEADERBOARD</button>
-            </div>
-            <div class="post-footer">
-                <button class="btn" onclick="showHome()">🏠 HOME</button>
-            </div>
-        </div>
-    `;
-};
-
-window.openClickMiner = () => {
-    el("minigames").innerHTML = `
-        <div class="post">
-            <div class="post-header"><b>⛏️ CLICK MINER</b></div>
-            <div class="post-body" style="text-align:center">
-                <p>Blöcke: <b id="bc">${miner.blocks}</b></p>
-                <p>Pro Klick: ${miner.perClick}</p>
-                <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/6/6e/Stone_JE5_BE3.png"
-                     style="width:120px;cursor:pointer;border:4px solid #000;image-rendering:pixelated"
-                     onclick="mine()">
-                <hr>
-                <h3>🛒 SHOP</h3>
-                <button class="btn btn-green" style="width:100%" onclick="upgrade()">+1 Block/Klick (Kosten: ${miner.perClick*10})</button>
-                <button class="btn btn-blue" style="width:100%;margin-top:5px" onclick="saveScore()">💾 Score speichern</button>
-            </div>
-            <div class="post-footer">
-                <button class="btn" onclick="showMiniGames()">⬅ ZURÜCK</button>
-                <button class="btn" onclick="showHome()">🏠 HOME</button>
-            </div>
-        </div>
-    `;
-};
-
-window.mine = () => { miner.blocks += miner.perClick; el("bc").innerText = miner.blocks; };
-window.upgrade = () => {
-    const cost = miner.perClick*10;
-    if(miner.blocks < cost) return alert("Nicht genug Blöcke!");
-    miner.blocks -= cost;
-    miner.perClick++;
-    openClickMiner();
-};
-
-/* LEADERBOARD */
-window.saveScore = async () => {
-    await setDoc(doc(db,"leaderboard",currentUser),{user:currentUser, blocks:miner.blocks});
-    alert("Score gespeichert!");
-};
-
-window.openLeaderboard = async () => {
-    const snap = await getDocs(query(collection(db,"leaderboard"), orderBy("blocks","desc"), limit(10)));
-    let list = "";
-    let i = 1;
-    snap.forEach(d => { list += `<p>${i++}. <b>${d.data().user}</b> – ${d.data().blocks}</p>`; });
-    el("minigames").innerHTML = `
-        <div class="post">
-            <div class="post-header"><b>🏆 LEADERBOARD</b></div>
-            <div class="post-body">${list || "Noch leer"}</div>
-            <div class="post-footer">
-                <button class="btn" onclick="showMiniGames()">⬅ ZURÜCK</button>
-                <button class="btn" onclick="showHome()">🏠 HOME</button>
-            </div>
-        </div>
-    `;
-};
-</script>
-
-</body>
-</html>
+    <div class="menu-item"
