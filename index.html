@@ -6,275 +6,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;--blue:#3498db;--red:#e74c3c;--gold:#ffcc00;--yt:#ff0000;--tt:#00f2ea;}
-body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;overflow-x:hidden;}
+:root{--bg:#1e1e1e;--panel:#333;--green:#5da03b;--dirt:#866043;--admin:#b04bff;--blue:#3498db;--red:#e74c3c;--gold:#ffcc00;}
+body{margin:0;background:var(--bg);color:white;font-family:'VT323',monospace;}
 .hidden{display:none!important;}
-header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:100;position:sticky;top:0;}
+header{background:var(--dirt);border-bottom:4px solid #000;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
 .header-title{cursor:pointer;color:#3f3;font-family:'Press Start 2P';font-size:0.8rem;}
-.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated;object-fit:cover;}
+.avatar{width:40px;height:40px;border:2px solid #000;image-rendering:pixelated}
 .container{max-width:700px;margin:20px auto;padding:0 10px}
 
 /* SIDE MENU */
-#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);background:#222;border-right:4px solid #000;z-index:90;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:0.3s;}
-#side-menu.open{transform:translateX(0);}
-.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:0.5rem;text-align:center;color:white;text-decoration:none;display:block;}
-.menu-item:hover{background:var(--green);}
+#side-menu{position:fixed;top:60px;left:0;width:280px;height:calc(100% - 60px);background:#222;border-right:4px solid #000;padding:20px;transform:translateX(-100%);transition:.3s}
+#side-menu.open{transform:translateX(0)}
+.menu-item{background:#444;border:2px solid #000;padding:10px;margin-bottom:10px;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem;text-align:center}
+.menu-item:hover{background:var(--green)}
 
-/* CHAT WINDOW */
-.chat-window{position:fixed;bottom:0;right:20px;width:320px;height:450px;background:#222;border:3px solid #000;display:flex;flex-direction:column;z-index:2000;box-shadow: 0 0 20px rgba(0,0,0,0.5);}
-.chat-header{background:var(--green);padding:10px;display:flex;justify-content:space-between;font-family:'Press Start 2P';font-size:0.5rem;align-items:center;border-bottom:2px solid #000;}
-.chat-messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#111;}
-.msg{padding:8px 12px;border-radius:4px;max-width:85%;font-size:1.2rem;word-wrap:break-word;border:1px solid rgba(255,255,255,0.1);}
-.msg.me{background:var(--green);align-self:flex-end;color:white;}
-.msg.them{background:#333;align-self:flex-start;color:#3f3;}
-
-/* POSTS */
-.post{background:var(--panel);border:3px solid #000;margin-bottom:20px}
-.post-header{background:#444;padding:10px;display:flex;gap:10px;align-items:center}
-.post-body{padding:15px;font-size:1.5rem;word-wrap:break-word;}
-.post-footer{background:#222;padding:10px;display:flex;gap:20px;font-size:1.2rem;border-top:1px solid #444;align-items:center;}
-.like-btn{cursor:pointer;}
-.liked{color: var(--red);}
-
-/* UI / MODAL */
-input,textarea{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;background:#000;color:#3f3;border:2px solid #555;font-family:'VT323';font-size:1.2rem;}
-.btn{padding:10px;margin-top:8px;border:2px solid #000;cursor:pointer;background:#aaa;font-family:'Press Start 2P';font-size:.5rem}
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000}
+.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:90%;max-width:400px;text-align:center}
+.btn{padding:10px;border:2px solid #000;cursor:pointer;font-family:'Press Start 2P';font-size:.5rem}
 .btn-green{background:var(--green);color:white}
 .btn-red{background:var(--red);color:white}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000}
-.card{background:#8b8b8b;border:4px solid #000;padding:20px;width:90%;max-width:400px;text-align:center;}
-.comment-box{max-height:200px; overflow-y:auto; text-align:left; background:#111; padding:10px; border:2px solid #000; margin:10px 0;}
 </style>
 </head>
-<body>
 
-<div id="auth-modal" class="modal">
-    <div class="card">
-        <h2 id="auth-title">LOGIN</h2>
-        <input id="auth-user" placeholder="Name">
-        <input id="auth-pass" type="password" placeholder="Passwort">
-        <input id="auth-skin" class="hidden" placeholder="Skin-URL">
-        <button class="btn btn-green" id="auth-btn" style="width:100%">WELT BETRETEN</button>
-        <p id="toggle-auth" style="cursor:pointer;font-size:.8rem;margin-top:10px">Registrieren</p>
-    </div>
-</div>
+<body>
 
 <header>
     <div class="header-title" id="menu-trigger">☰ CRAFTNET</div>
-    <div id="nav-info" class="hidden" style="display:flex;gap:10px;align-items:center">
-        <img id="nav-avatar" class="avatar">
-        <button class="btn btn-red" id="btn-logout" style="margin:0; padding:5px 10px;">X</button>
-    </div>
 </header>
 
+<!-- SIDE MENU -->
 <div id="side-menu">
     <div class="menu-item" onclick="location.reload()">🏠 HOME</div>
-    <div class="menu-item" onclick="window.openProfileEdit()">⚙️ PROFIL</div>
-    <div class="menu-item" onclick="window.openFriendsList()">🤝 FREUNDE</div>
-    <div class="menu-item" style="background:var(--gold); color:black;" onclick="window.openOwnerPage()">👑 OWNER</div>
-    
-    <div id="admin-section" class="hidden">
-        <hr style="border:1px solid #000">
-        <div class="menu-item" style="background:var(--admin)" onclick="window.openAdminPanel()">👑 USER CONTROL</div>
-    </div>
+    <div class="menu-item" onclick="openMiniGames()">🎮 MINI-SPIELE</div>
+    <div class="menu-item" style="background:var(--gold);color:black" onclick="openOwner()">👑 OWNER</div>
 </div>
 
-<div id="main" class="container hidden">
-    <div class="post" style="padding:15px;background:#444">
-        <textarea id="post-text" placeholder="Was gibt's Neues?"></textarea>
-        <input id="post-media" placeholder="YouTube oder Bild-URL">
-        <button class="btn btn-green" id="btn-post" style="width:100%">POSTEN</button>
-    </div>
-    <div id="feed">Lade Welt...</div>
-</div>
-
-<div id="chat-container"></div>
-
+<!-- UI MODAL -->
 <div id="ui-modal" class="modal hidden">
     <div class="card" id="ui-content"></div>
-    <button onclick="window.closeUI()" class="btn btn-red" style="position:fixed; bottom:20px;">SCHLIESSEN</button>
+    <button class="btn btn-red" style="position:fixed;bottom:20px" onclick="closeUI()">SCHLIESSEN</button>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, limit, increment, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDxV7vSYCg5MwgakrdEsgWcQF6ZlEyDWkg",
-  authDomain: "craftnet-1c6d1.firebaseapp.com",
-  projectId: "craftnet-1c6d1",
-  storageBucket: "craftnet-1c6d1.firebasestorage.app",
-  messagingSenderId: "679779814784",
-  appId: "1:679779814784:web:d42642d13217015f9f8565"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const ADMINS = ["Mauvi_"]; 
-let currentUser = null;
-let allUsers = {};
-let currentChatUnsubscribe = null;
+<script>
 const el = id => document.getElementById(id);
-
 el("menu-trigger").onclick = () => el("side-menu").classList.toggle("open");
 
-/* --- LOGIN / REGISTER --- */
-el("toggle-auth").onclick = () => {
-    const isLogin = el("auth-title").innerText === "LOGIN";
-    el("auth-title").innerText = isLogin ? "REGISTRIEREN" : "LOGIN";
-    el("auth-skin").classList.toggle("hidden", !isLogin);
-};
+/* ================= MINI GAMES ================= */
 
-async function login(name, data) {
-    currentUser = name;
-    localStorage.setItem("craftnet_session", name);
-    el("auth-modal").classList.add("hidden");
-    el("main").classList.remove("hidden");
-    el("nav-info").classList.remove("hidden");
-    el("nav-avatar").src = data.skin || `https://minotar.net/avatar/${name}`;
-    if(ADMINS.includes(name)) el("admin-section").classList.remove("hidden");
-    startApp();
-}
+let minedBlocks = 0;
 
-el("auth-btn").onclick = async () => {
-    const n = el("auth-user").value.trim();
-    const p = el("auth-pass").value;
-    if(!n || p.length < 4) return alert("Eingabe prüfen!");
-    const snap = await getDoc(doc(db, "users", n));
-    if(el("auth-title").innerText === "LOGIN") {
-        if(snap.exists() && snap.data().pass === p) login(n, snap.data());
-        else alert("Falsche Daten!");
-    } else {
-        if(snap.exists()) return alert("Name vergeben!");
-        const data = { pass: p, skin: el("auth-skin").value || `https://minotar.net/avatar/${n}`, bio: "Miner", friends: [] };
-        await setDoc(doc(db, "users", n), data);
-        login(n, data);
-    }
-};
-
-el("btn-logout").onclick = () => { localStorage.removeItem("craftnet_session"); location.reload(); };
-
-window.addEventListener('DOMContentLoaded', async () => {
-    const saved = localStorage.getItem("craftnet_session");
-    if(saved) {
-        const snap = await getDoc(doc(db, "users", saved));
-        if(snap.exists()) login(saved, snap.data());
-    }
-});
-
-/* --- FEED & KOMMENTARE --- */
-function startApp() {
-    onSnapshot(collection(db, "users"), snap => snap.forEach(d => allUsers[d.id] = d.data()));
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(30));
-    onSnapshot(q, snap => {
-        el("feed").innerHTML = "";
-        snap.forEach(docSnap => {
-            const p = docSnap.data();
-            const id = docSnap.id;
-            const hasLiked = p.likedBy?.includes(currentUser);
-            const ytId = p.media?.match(/(?:v=|\.be\/|embed\/)([^&?#/]+)/)?.[1];
-            
-            el("feed").innerHTML += `
-                <div class="post">
-                    <div class="post-header">
-                        <img class="avatar" src="${allUsers[p.author]?.skin || ''}">
-                        <b onclick="window.showUserPage('${p.author}')" style="cursor:pointer">${p.author}</b>
-                    </div>
-                    <div class="post-body">
-                        ${p.text}
-                        ${ytId ? `<iframe src="https://www.youtube.com/embed/${ytId}" frameborder="0" style="width:100%; height:300px"></iframe>` : ""}
-                        ${(p.media && !ytId) ? `<img src="${p.media}" style="width:100%;margin-top:10px;border:2px solid #000">` : ""}
-                    </div>
-                    <div class="post-footer">
-                        <span class="like-btn ${hasLiked ? 'liked' : ''}" onclick="window.toggleLike('${id}', ${hasLiked})">
-                            ${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}
-                        </span>
-                        <span onclick="window.showComments('${id}')" style="cursor:pointer">💬 ${p.comments?.length || 0}</span>
-                        ${ADMINS.includes(currentUser) ? `<span onclick="window.delPost('${id}')" style="color:red;cursor:pointer">🗑</span>` : ""}
-                    </div>
-                </div>`;
-        });
-    });
-}
-
-window.showComments = async (postId) => {
-    const postSnap = await getDoc(doc(db, "posts", postId));
-    const p = postSnap.data();
-    el("ui-modal").classList.remove("hidden");
-    let html = `<h3>KOMMENTARE</h3><div class="comment-box">`;
-    if(p.comments?.length) {
-        p.comments.forEach(c => html += `<div style="margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;"><b style="color:var(--green)">${c.u}:</b> ${c.t}</div>`);
-    } else html += `<p style="opacity:0.5;">Keine Kommentare.</p>`;
-    html += `</div><input id="new-comm-input" placeholder="Schreiben..."><button class="btn btn-green" style="width:100%" onclick="window.submitComment('${postId}')">SENDEN</button>`;
-    el("ui-content").innerHTML = html;
-};
-
-window.submitComment = async (id) => {
-    const text = el("new-comm-input").value.trim();
-    if(!text) return;
-    await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ u: currentUser, t: text }) });
-    window.showComments(id);
-};
-
-window.toggleLike = async (postId, alreadyLiked) => {
-    await updateDoc(doc(db, "posts", postId), { likes: increment(alreadyLiked ? -1 : 1), likedBy: alreadyLiked ? arrayRemove(currentUser) : arrayUnion(currentUser) });
-};
-
-el("btn-post").onclick = async () => {
-    const text = el("post-text").value.trim();
-    if(!text) return;
-    await addDoc(collection(db, "posts"), { author: currentUser, text, media: el("post-media").value, timestamp: Date.now(), comments: [], likes: 0, likedBy: [] });
-    el("post-text").value = ""; el("post-media").value = "";
-};
-
-window.delPost = async id => { if(confirm("Löschen?")) await deleteDoc(doc(db, "posts", id)); };
-
-/* --- OWNER PAGE --- */
-window.openOwnerPage = () => {
+function openMiniGames(){
     el("side-menu").classList.remove("open");
     el("ui-modal").classList.remove("hidden");
     el("ui-content").innerHTML = `
-        <h2 style="color:var(--gold)">👑 OWNER</h2>
-        <img src="https://minotar.net/avatar/Mauvi_" style="width:80px; image-rendering:pixelated; border:4px solid #000; margin-bottom:10px;">
-        <p style="font-size:1.5rem">Folgt mir auf meinen Kanälen!</p>
-        
-        <a href="https://youtube.com/@mauvi020?si=vSFNaTIx8dcije8d" target="_blank" class="btn" style="background:var(--yt); color:white; display:block; text-decoration:none; margin-bottom:10px;">📺 YOUTUBE</a>
-        
-        <a href="https://www.tiktok.com/@mauvi_cat?_r=1&_t=ZG-936669Va7qy" target="_blank" class="btn" style="background:var(--tt); color:black; display:block; text-decoration:none;">📱 TIKTOK</a>
-        
-        <p style="margin-top:20px; font-size:0.8rem; opacity:0.7;">CraftNet v2.0 - Developed by Mauvi_</p>
+        <h2>🎮 MINI-SPIELE</h2>
+        <button class="btn btn-green" style="width:100%" onclick="openClickMiner()">⛏️ CLICK MINER</button>
     `;
-};
+}
 
-/* --- UI HELPERS --- */
-window.closeUI = () => el("ui-modal").classList.add("hidden");
-window.openFriendsList = () => {
-    const friends = allUsers[currentUser]?.friends || [];
+function openClickMiner(){
+    el("ui-content").innerHTML = `
+        <h2>⛏️ MINECRAFT CLICK MINER</h2>
+        <p style="font-size:1.5rem">Abgebaute Blöcke: <b id="count">${minedBlocks}</b></p>
+
+        <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/6/6e/Stone_JE5_BE3.png"
+             style="width:120px;image-rendering:pixelated;border:4px solid #000;cursor:pointer"
+             onclick="mineBlock()">
+
+        <p style="opacity:.7">Klicke den Block zum Abbauen</p>
+
+        <button class="btn" style="width:100%" onclick="openMiniGames()">⬅ ZURÜCK</button>
+    `;
+}
+
+function mineBlock(){
+    minedBlocks++;
+    el("count").innerText = minedBlocks;
+}
+
+/* ================= OWNER ================= */
+
+function openOwner(){
     el("ui-modal").classList.remove("hidden");
-    el("ui-content").innerHTML = `<h3>🤝 FREUNDE</h3>` + (friends.length ? friends.map(f => `<button class="btn btn-green" style="width:100%; margin-bottom:5px" onclick="window.openChat('${f}')">${f} CHATTEN</button>`).join("") : "Keine Freunde.");
-};
-window.openChat = (target) => {
-    window.closeUI();
-    const chatId = [currentUser, target].sort().join("_");
-    el("chat-container").innerHTML = `<div class="chat-window"><div class="chat-header"><span>${target}</span><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer">X</span></div><div id="chat-msgs" class="chat-messages"></div><div style="padding:10px; background:#222;"><input id="chat-input" placeholder="Nachricht..."></div></div>`;
-    const q = query(collection(db, "chats", chatId, "messages"), orderBy("t", "asc"), limit(50));
-    onSnapshot(q, snap => {
-        el("chat-msgs").innerHTML = "";
-        snap.forEach(d => el("chat-msgs").innerHTML += `<div class="msg ${d.data().u === currentUser ? 'me' : 'them'}">${d.data().m}</div>`);
-        el("chat-msgs").scrollTop = el("chat-msgs").scrollHeight;
-    });
-    el("chat-input").onkeydown = async e => { if(e.key === "Enter" && e.target.value.trim()){ await addDoc(collection(db, "chats", chatId, "messages"), { u: currentUser, m: e.target.value, t: Date.now() }); e.target.value=""; } };
-};
-window.showUserPage = (name) => {
-    const u = allUsers[name]; el("ui-modal").classList.remove("hidden");
-    el("ui-content").innerHTML = `<img src="${u.skin}" style="width:80px; image-rendering:pixelated; border:2px solid #000"><h2>${name}</h2><p>${u.bio || 'Miner'}</p>${(name !== currentUser && !allUsers[currentUser].friends?.includes(name)) ? `<button class="btn btn-blue" onclick="window.addFriend('${name}')">HINZUFÜGEN</button>` : (name !== currentUser ? `<button class="btn btn-green" onclick="window.openChat('${name}')">CHAT</button>` : "")}`;
-};
-window.addFriend = async name => { await updateDoc(doc(db, "users", name), { friends: arrayUnion(currentUser) }); await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(name) }); alert("Befreundet!"); window.closeUI(); };
-window.openProfileEdit = () => { const u = allUsers[currentUser]; el("ui-modal").classList.remove("hidden"); el("ui-content").innerHTML = `<h3>⚙️ PROFIL</h3>Skin URL:<input id="edit-skin" value="${u.skin || ''}">Bio:<textarea id="edit-bio">${u.bio || ''}</textarea><button class="btn btn-green" onclick="window.saveProfile()">SPEICHERN</button>`; };
-window.saveProfile = async () => { await updateDoc(doc(db, "users", currentUser), { skin: el("edit-skin").value, bio: el("edit-bio").value }); location.reload(); };
-window.openAdminPanel = async () => { el("ui-modal").classList.remove("hidden"); const snap = await getDocs(collection(db, "users")); let html = "<h3>👑 ADMIN</h3>"; snap.forEach(d => { if(d.id !== currentUser) html += `<div style="background:#444; margin:5px; padding:10px; border:2px solid #000"><b>${d.id}</b> <button class="btn btn-red" onclick="window.adminDelUser('${d.id}')">X</button></div>`; }); el("ui-content").innerHTML = html; };
-window.adminDelUser = async n => { if(confirm(`Löschen?`)) await deleteDoc(doc(db, "users", n)); window.openAdminPanel(); };
+    el("ui-content").innerHTML = `
+        <h2 style="color:var(--gold)">👑 OWNER</h2>
+        <p>CraftNet – Developed by Mauvi_</p>
+    `;
+}
+
+function closeUI(){
+    el("ui-modal").classList.add("hidden");
+}
 </script>
+
 </body>
 </html>
